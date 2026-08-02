@@ -1,0 +1,60 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026, MinuoPDF Contributors
+# This file is distributed under the same license as the MinuoPDF package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: MinuoPDF \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 09:38+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../index.rst:8
+msgid "コンテンツ一覧:"
+msgstr "Contents:"
+
+#: ../../index.rst:3
+msgid "MinuoPDF ドキュメントへようこそ"
+msgstr "Welcome to MinuoPDF Documentation"
+
+#: ../../index.rst:5
+msgid ""
+"**MinuoPDF** "
+"は、PDFの閲覧品質を維持しつつファイルサイズを極限まで軽量化する、非GPL（MIT/BSD準拠）かつ完全ポータブルなPDF最適化ツールです。 "
+"デスクトップGUI（Tauri v2 + Svelte 5）と高速対話型CUI（Rust）の両モードを提供します。"
+msgstr ""
+"**MinuoPDF** is a non-GPL (MIT/BSD compliant), fully portable PDF optimization tool that drastically reduces PDF file size while maintaining viewing quality. "
+"It offers both Desktop GUI (Tauri v2 + Svelte 5) and high-speed CUI (Rust) modes."
+
+#: ../../index.rst:19
+msgid "プロジェクト概要"
+msgstr "Project Overview"
+
+
+#: ../../index.rst:21
+msgid "**超軽量・ポータブル性**: インストーラ不要、同一フォルダ内の ``pdfium.dll`` を自動自動ロード。"
+msgstr "**Ultra Lightweight & Portable**: No installer required, automatically loads ``pdfium.dll`` in the same folder."
+
+#: ../../index.rst:22
+msgid "**完全非GPLライセンス**: 商用利用・社内閉域環境でも安心して利用可能な MIT / Apache 2.0 構成。"
+msgstr "**100% Non-GPL License**: MIT / Apache 2.0 configuration safe for commercial and enterprise internal use."
+
+#: ../../index.rst:23
+msgid ""
+"**多様な最適化機能**: JPEG再圧縮、白黒二値化（大津の二値化 / "
+"ディザリング）、テキスト保持/完全ラスタライズ切替、不要オブジェクト破棄、フォントサブセット化・埋め込み解除。"
+msgstr ""
+"**Diverse Optimization Features**: JPEG re-compression, B&W binarization (Otsu binarization / "
+"dithering), text retention / full rasterization toggle, unneeded object cleanup, and font subsetting / un-embedding."
+
+

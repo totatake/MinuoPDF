@@ -1,0 +1,154 @@
+# English translations for MinuoPDF package.
+# Copyright (C) 2026, MinuoPDF Contributors
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: MinuoPDF\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 22:56+0900\n"
+"PO-Revision-Date: 2026-07-25 23:00+0900\n"
+"Last-Translator: MinuoPDF Team\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../testing.rst:3
+msgid "テスト仕様および品質検証 (Testing)"
+msgstr "Test Specifications & Quality Assurance (Testing)"
+
+#: ../../testing.rst:5
+msgid "本ドキュメントは、MinuoPDF のユニットテスト、結合テスト、GUI E2E 自動テスト、および適格性テストの検証仕様を定義します。"
+msgstr ""
+"This document defines the verification specifications for unit testing, "
+"integration testing, GUI E2E automated testing, and qualification testing"
+" of MinuoPDF."
+
+#: ../../testing.rst:8
+msgid "テスト仕様"
+msgstr "Test Specifications"
+
+#: ../../testing.rst:11
+msgid "単体テスト仕様 (Unit Verification)"
+msgstr "Unit Test Specifications (Unit Verification)"
+
+#: ../../testing.rst:17
+msgid ""
+"**画像処理ロジック**: Otsu の二値化アルゴリズム、CCITT Group 4 "
+"エンコード、および画像ダンプ・変換関数の正常性を単体レベルで検証する (``test_otsu_thresholding``, "
+"``test_g4_encoding``)。"
+msgstr ""
+"**Image Processing Logic**: Verifies unit-level functionality for Otsu binarization algorithm, CCITT Group 4 encoding, and image dump/conversion functions (``test_otsu_thresholding``, ``test_g4_encoding``)."
+
+#: ../../testing.rst:23
+msgid ""
+"**プロファイルI/O**: 設定オブジェクトのJSON書き出し・読み込み・削除・プロファイルディレクトリの書き込み権限を単体検証する "
+"(``test_profile_save_load_delete``, ``test_preset_configs``)。"
+msgstr ""
+"**Profile I/O**: Verifies unit functionality for JSON serialization, loading, deletion, and write permissions of the profile directory (``test_profile_save_load_delete``, ``test_preset_configs``)."
+
+#: ../../testing.rst:29
+msgid ""
+"**フォントストリーム解析**: PDF内部のTrueType/OpenType "
+"CIDマッピング抽出、W配列パース、およびフォントサブセット化ロジックを単体検証する (``test_extract_hex_gids``, "
+"``test_subset_ikinari_pdf``)。"
+msgstr ""
+"**Font Stream Analysis**: Verifies TrueType/OpenType CID mapping extraction, W-array parsing, and font subsetting logic inside PDFs (``test_extract_hex_gids``, ``test_subset_ikinari_pdf``)."
+
+#: ../../testing.rst:35
+msgid ""
+"**容量割合計算**: PDF オブジェクト（画像、ストリーム、注釈等）の容量算出およびパーセンテージ計算ロジックを単体検証する "
+"(``test_audit_category_percentage``, ``test_audit_user_pdfs``)。"
+msgstr ""
+"**Size Calculation**: Verifies unit calculations for PDF object sizes (images, streams, annotations, etc.) and percentage distribution logic (``test_audit_category_percentage``, ``test_audit_user_pdfs``)."
+
+#: ../../testing.rst:38
+msgid "結合テスト仕様 (Integration Verification)"
+msgstr "Integration Test Specifications (Integration Verification)"
+
+#: ../../testing.rst:44
+msgid ""
+"**カラー置換パイプライン**: Color (DCTDecode JPEG再圧縮)、Gray (グレースケール変換)、Mono "
+"(Otsu/Dither) の各モードにおけるPDFオブジェクト走査・最適化処理の結合正常性を検証する。"
+msgstr ""
+"**Color Replacement Pipeline**: Verifies integration correctness for PDF object traversal and optimization across Color (DCTDecode JPEG re-compression), Gray (grayscale conversion), and Mono (Otsu/Dither) modes."
+
+#: ../../testing.rst:50
+msgid "**完全ラスタライズモード**: ``pdfium.dll`` を介した高精細ページレンダリングおよび画像PDF生成処理の結合正常性を検証する。"
+msgstr "**Full Rasterization Mode**: Verifies integration for high-definition page rendering and image PDF generation via ``pdfium.dll``."
+
+#: ../../testing.rst:56
+msgid ""
+"**安全消去・切替**: "
+"埋め込みフォントストリームの物理削除（Helvetica切替）および不要オブジェクト（注釈、しおり、メタデータ、JS等）の一括破棄の結合正常性を検証する。"
+msgstr ""
+"**Safe Deletion & Fallback**: Verifies physical removal of embedded font streams (switching to Helvetica) and bulk discarding of unneeded objects (annotations, bookmarks, metadata, JS, etc.)."
+
+#: ../../testing.rst:62
+msgid "**双方向連携**: Tauri ``invoke`` メッセージ受動処理および進捗率（0-100%）・リアルタイムログ配信のIPC統合を検証する。"
+msgstr "**Bidirectional Integration**: Verifies Tauri ``invoke`` message handling and IPC integration for progress rates (0-100%) and real-time log streaming."
+
+#: ../../testing.rst:65
+msgid "適格性テスト仕様 (Qualification Testing)"
+msgstr "Qualification Test Specifications (Qualification Testing)"
+
+#: ../../testing.rst:71
+msgid "**容量削減評価**: 実サンプルPDF（カラー、グレー、モノクロ文書）に対する目標圧縮率とPDF閲覧整合性を検証する。"
+msgstr "**Compression Rate Evaluation**: Verifies target compression rates and PDF viewing integrity against actual sample PDFs (color, grayscale, and monochrome documents)."
+
+#: ../../testing.rst:77
+msgid ""
+"**ライセンス監査**: サードパーティ依存クレート（lopdf, image, "
+"fax等）におけるGPL混入ゼロおよびMIT/BSD/Apache-2.0適合を確認する。"
+msgstr ""
+"**License Audit**: Verifies zero GPL inclusion and compliance with MIT/BSD/Apache-2.0 across third-party dependency crates (lopdf, image, fax, etc.)."
+
+#: ../../testing.rst:83
+msgid ""
+"**ポータブル動作確認**: インストーラ不要の単体起動、同階層 ``pdfium.dll`` / ``profiles/`` "
+"自立読み込み、および黒枠プロンプトのSW_HIDE非表示化を検証する。"
+msgstr ""
+"**Portable Operation Verification**: Verifies installer-free standalone execution, self-contained loading of ``pdfium.dll`` / ``profiles/`` in the same directory, and SW_HIDE prompt hiding."
+
+#: ../../testing.rst:86
+msgid "E2E GUI 自動テスト仕様 (Playwright GUI Automation)"
+msgstr "E2E GUI Automated Test Specifications (Playwright GUI Automation)"
+
+#: ../../testing.rst:92
+msgid ""
+"**Playwright 自動 GUI テスト**: ウィンドウタイトル・レイアウト要素のレンダリング、動的多言語切替 "
+"(ja/en)、タブ切り替え (簡単/詳細/プロファイル)、プリセット選択動作を自動検証する。"
+msgstr ""
+"**Playwright Automated GUI Tests**: Automatically verifies window title and layout rendering, dynamic language toggle (ja/en), tab switching (Easy/Detail/Profile), and preset selection behavior."
+
+#: ../../testing.rst:93
+msgid "**実行コマンド**: ``make test-gui`` または ``npm run test:gui``"
+msgstr "**Execution Command**: ``make test-gui`` or ``npm run test:gui``"
+
+#: ../../testing.rst:99
+msgid ""
+"**画像・破棄・フォントGUIコントロール**: "
+"詳細モードにおけるカラーポリシー選択、解像度(DPI)・JPEG品質入力、二値化方式ドロップダウン、不要オブジェクト破棄チェックボックス群、およびフォント一覧ダブルクリックによる埋め込み解除(Unembed)トグル動作を自動検証する。"
+msgstr ""
+"**Image, Discard & Font GUI Controls**: Automatically verifies color policy selection, resolution (DPI) & JPEG quality inputs, binarization dropdowns, unneeded object discard checkboxes, and double-click font unembedding toggles in Detail Mode."
+
+#: ../../testing.rst:105
+msgid "**プロファイル操作フォーム**: プロファイル保存名の入力と保存ボタン活性化、保存済みプロファイル選択・ロード・削除のGUIトリガーを検証する。"
+msgstr "**Profile Form Controls**: Verifies profile name inputs, save button activation, and GUI triggers for selecting, loading, and deleting saved profiles."
+
+#: ../../testing.rst:111
+msgid ""
+"**ファイル追加・クリアUI**: "
+"ドロップエリア表示、ファイル追加ダイアログトリガー、個別削除ボタンおよび一括クリアボタンのUI表示・動作を検証する。"
+msgstr ""
+"**File Addition & Clear UI**: Verifies drop area rendering, file addition dialog triggers, individual removal buttons, and clear-all button UI display and operation."
+
+#: ../../testing.rst:117
+msgid ""
+"**進捗・ステータスバー・ログ**: "
+"リアルタイム進捗率表示（0-100%）、プログレスバー、一括最適化開始ボタン、および実行コンソールログエリアのレイアウトと可視性を検証する。"
+msgstr ""
+"**Progress, Status Bar & Console Log**: Verifies real-time progress display (0-100%), progress bar, bulk optimization button, and layout/visibility of the execution console log area."

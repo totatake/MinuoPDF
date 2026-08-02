@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "color_conv": "gray",
+  "color_img": {
+    "downsample": "bicubic",
+    "target_dpi": 50,
+    "threshold_dpi": 225,
+    "format": "jpeg",
+    "quality": 35,
+    "mono_method": null
+  },
+  "gray_img": {
+    "downsample": "bicubic",
+    "target_dpi": 50,
+    "threshold_dpi": 225,
+    "format": "jpeg",
+    "quality": 35,
+    "mono_method": null
+  },
+  "mono_img": {
+    "downsample": "bicubic",
+    "target_dpi": 300,
+    "threshold_dpi": 450,
+    "format": "ccitt",
+    "quality": 0,
+    "mono_method": "threshold"
+  },
+  "discard_comments": true,
+  "discard_links": true,
+  "discard_bookmarks": true,
+  "discard_forms": true,
+  "discard_metadata": true,
+  "discard_js": true,
+  "discard_thumbs": true,
+  "clean_linearize": true,
+  "clean_deflate": true,
+  "clean_sanitize": true,
+  "font_subset": true,
+  "unembed_fonts": [],
+  "force_rasterize": true
+}

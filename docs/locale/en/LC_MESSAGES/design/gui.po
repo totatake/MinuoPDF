@@ -1,0 +1,71 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026, MinuoPDF Contributors
+# This file is distributed under the same license as the MinuoPDF package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: MinuoPDF \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 09:38+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../design/gui.rst:3
+msgid "フロントエンド詳細設計 (GUI Design)"
+msgstr "Frontend Detailed Design (GUI Design)"
+
+#: ../../design/gui.rst:6
+msgid "概要"
+msgstr "Overview"
+
+#: ../../design/gui.rst:8
+msgid "フロントエンドは Svelte 5 + TypeScript + Vite で構築されており、コンポーネント指向のモジュール設計となっています。"
+msgstr "The frontend is built with Svelte 5 + TypeScript + Vite, featuring a component-oriented modular design."
+
+#: ../../design/gui.rst:11
+msgid "コンポーネント詳細設計"
+msgstr "Component Detailed Design"
+
+#: ../../design/gui.rst:17
+#, python-brace-format
+msgid ""
+"**状態変数 (State)**: - ``files: FileItem[]``: 追加されたPDFファイルのリスト - "
+"``activeTab: 'easy' | 'detail'``: モード選択状態 - ``config: OptimizeConfig``: "
+"圧縮設定オブジェクト - ``isProcessing: boolean``: 処理実行フラグ - ``progress: { percent: "
+"number, currentFile: string }``: 進捗状態"
+msgstr ""
+"**State Variables (State)**: - ``files: FileItem[]``: List of added PDF files - "
+"``activeTab: 'easy' | 'detail'``: Mode selection state - ``config: OptimizeConfig``: "
+"Optimization configuration object - ``isProcessing: boolean``: Processing execution flag - ``progress: { percent: "
+"number, currentFile: string }``: Progress status"
+
+#: ../../design/gui.rst:23
+msgid ""
+"**イベントハンドラ**: - ``handleDrop(e: DragEvent)``: ファイルドロップ受領・PDFフィルタリング - "
+"``startOptimization()``: Tauri ``invoke('optimize_files', ...)`` の呼び出し"
+msgstr ""
+"**Event Handlers**: - ``handleDrop(e: DragEvent)``: Accepts file drop and filters PDFs - "
+"``startOptimization()``: Invokes Tauri ``invoke('optimize_files', ...)``"
+
+
+#: ../../design/gui.rst:31
+msgid "`i18n.ts` にて日本語 (ja) および英語 (en) の対訳キー辞書を保持。"
+msgstr "Maintains Japanese (ja) and English (en) translation key dictionaries in `i18n.ts`."
+
+#: ../../design/gui.rst:32
+msgid ""
+"Svelte 5 の Reactive State (``$state``) "
+"を用いて、言語ボタンクリック時に全UIテキストをシームレスに再描画する。"
+msgstr ""
+"Uses Svelte 5 Reactive State (``$state``) to seamlessly re-render all UI text upon language button clicks."
+
+

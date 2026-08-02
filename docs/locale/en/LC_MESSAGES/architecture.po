@@ -1,0 +1,94 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026, MinuoPDF Contributors
+# This file is distributed under the same license as the MinuoPDF package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: MinuoPDF \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 09:38+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../architecture.rst:3
+msgid "ソフトウェアアーキテクチャ設計書"
+msgstr "Software Architecture Design Specification"
+
+#: ../../architecture.rst:5
+msgid "本ドキュメントは、MinuoPDF アプリケーションのシステム構成、コンポーネント設計、およびデータフローを定義します。"
+msgstr "This document defines the system architecture, component design, and data flow of the MinuoPDF application."
+
+#: ../../architecture.rst:8
+msgid "システム構成概要"
+msgstr "System Architecture Overview"
+
+#: ../../architecture.rst:10
+msgid ""
+"MinuoPDF は、フロントエンド層（Svelte 5）、IPC ゲートウェイ（Tauri "
+"v2）、およびバックエンド層（Rust）の3層アーキテクチャで構成されます。"
+msgstr ""
+"MinuoPDF consists of a 3-tier architecture: Frontend layer (Svelte 5), IPC gateway (Tauri v2), and Backend layer (Rust)."
+
+#: ../../architecture.rst:42
+msgid "アーキテクチャコンポーネント"
+msgstr "Architecture Components"
+
+#: ../../architecture.rst:48
+msgid ""
+"Svelte 5 を採用した単一ページアプリケーション（SPA）。Catppuccin Mocha "
+"ダークテーマに基づき、固定サイズ（680x530）レイアウトと動的多言語（ja/en）ステートを提供する。"
+msgstr ""
+"A Single Page Application (SPA) built with Svelte 5. Based on the Catppuccin Mocha dark theme, it provides a fixed-size (680x530) layout and dynamic multilingual (ja/en) state."
+
+#: ../../architecture.rst:54
+msgid ""
+"Tauri v2 ``invoke`` "
+"メッセージハンドラおよびイベントエミッター。進捗状況（0-100%）や非同期ログ出力をフロントエンドにリアルタイム配信する。"
+msgstr ""
+"Tauri v2 ``invoke`` message handler and event emitter. It streams real-time progress (0-100%) and asynchronous console logs to the frontend."
+
+#: ../../architecture.rst:60
+msgid ""
+"起動引数の有無を判定し、引数が存在する場合は Win32 SW_HIDE "
+"をスキップして対話型コンソールインターフェース（``cli.rs``）を起動する。"
+msgstr ""
+"Determines the presence of command-line arguments. If arguments are present, skips Win32 SW_HIDE and launches the interactive console interface (``cli.rs``)."
+
+#: ../../architecture.rst:66
+msgid ""
+"実行ファイルと同一階層の ``profiles/`` サブディレクトリから JSON "
+"プロファイルを動的に検出・ロードし、バージョン検証（v2以上）を行う。"
+msgstr ""
+"Dynamically detects and loads JSON profiles from the ``profiles/`` subdirectory in the same folder as the executable, performing version validation (v2 or higher)."
+
+#: ../../architecture.rst:72
+msgid ""
+"``lopdf`` クレートを用いて PDF オブジェクトツリーを走査・書き換えし、画像 XObject "
+"の抽出・置換、不要辞書キーの削除、およびストリーム再圧縮を行う。"
+msgstr ""
+"Uses the ``lopdf`` crate to traverse and rewrite the PDF object tree, extracting/replacing image XObjects, removing unneeded dictionary keys, and re-compressing streams."
+
+#: ../../architecture.rst:78
+msgid ""
+"``pdfium-render`` を介して ``pdfium.dll`` "
+"を動的ロードし、ページ全域を高精細レンダリングして画像化（ラスタライズ）する。"
+msgstr ""
+"Dynamically loads ``pdfium.dll`` via ``pdfium-render`` to render the entire page in high resolution and convert it to images (rasterize)."
+
+#: ../../architecture.rst:84
+msgid ""
+"PDF内の TrueType/OpenType フォントの CID "
+"マッピング解析、サブセット化、および埋め込みストリーム（``FontFile2`` 等）の安全な削除処理を行う。"
+msgstr ""
+"Performs CID mapping analysis, subsetting, and safe deletion of embedded font streams (e.g. ``FontFile2``) for TrueType/OpenType fonts in the PDF."
+
+

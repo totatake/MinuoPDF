@@ -1,0 +1,147 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026, MinuoPDF Contributors
+# This file is distributed under the same license as the MinuoPDF package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: MinuoPDF \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 09:38+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../requirements.rst:3
+msgid "ソフトウェア要件仕様書 (Requirements)"
+msgstr "Software Requirements Specification (Requirements)"
+
+#: ../../requirements.rst:5
+msgid "本ドキュメントは、MinuoPDF アプリケーションの機能要件および非機能要件を定義します。"
+msgstr "This document defines the functional and non-functional requirements of the MinuoPDF application."
+
+#: ../../requirements.rst:8
+msgid "機能要件 (Functional Requirements)"
+msgstr "Functional Requirements"
+
+#: ../../requirements.rst:11
+msgid "GUI 共通およびウィンドウ管理"
+msgstr "Common GUI & Window Management"
+
+#: ../../requirements.rst:17
+msgid ""
+"GUI起動時、ウィンドウサイズは幅 680px、高さ 530px で表示されること。また、画面崩れ防止のためリサイズ不可（``resizable:"
+" false``）であること。"
+msgstr ""
+"Upon GUI launch, the window size shall be displayed at width 680px and height 530px. Furthermore, it shall not be resizable (``resizable: false``) to prevent layout distortion."
+
+#: ../../requirements.rst:23
+msgid "画面右上の言語切り替えボタンにより、GUI上の表示テキスト（ツールチップ、メッセージログ、エラー警告等を含む）が「日本語(JA)」と「English(EN)」で動的に切り替わること。"
+msgstr "The language toggle button at the top right of the screen shall dynamically switch GUI display text (including tooltips, message logs, error warnings, etc.) between 'Japanese (JA)' and 'English (EN)'."
+
+#: ../../requirements.rst:29
+msgid "詳細モード内の主要コントロールにホバーした際、機能説明と容量・画質への影響を示すツールチップが表示されること。"
+msgstr "When hovering over major controls in Advanced Mode, tooltips showing feature descriptions and impacts on file size/quality shall be displayed."
+
+#: ../../requirements.rst:35
+msgid "圧縮実行時、リアルタイムに処理進捗率（0-100%）、プログレスバー、および処理中のファイル名が表示されること。"
+msgstr "During compression execution, the real-time progress percentage (0-100%), progress bar, and current processing file name shall be displayed."
+
+#: ../../requirements.rst:41
+msgid "圧縮完了時、コンソールログエリアに処理結果（圧縮成功/失敗、変換前後の容量、容量削減率）が表示されること。"
+msgstr "Upon completion of compression, execution results (compression success/failure, file size before and after conversion, and reduction rate) shall be displayed in the console log area."
+
+#: ../../requirements.rst:44
+msgid "対象ファイルリスト管理"
+msgstr "Target File List Management"
+
+#: ../../requirements.rst:50
+msgid "アプリケーション画面（特にドロップエリア）へのドラッグ＆ドロップにより、PDFファイルをリストに追加できること。PDF以外の拡張子は除外されること。"
+msgstr "PDF files shall be addable to the list by drag-and-drop onto the application window (specifically the drop area). Non-PDF file extensions shall be excluded."
+
+#: ../../requirements.rst:56
+msgid "「PDF追加...」ボタンからOS標準のファイル選択ダイアログを開き、複数ファイルを選択してリストに追加できること。"
+msgstr "The OS standard file picker dialog shall be openable via the 'Add PDF...' button to select and add multiple files to the list."
+
+#: ../../requirements.rst:62
+msgid "選択したファイルの個別削除および「すべてクリア」ボタンによる一括削除ができること。"
+msgstr "Selected files shall be individually removable, and all files shall be clearable at once via the 'Clear All' button."
+
+#: ../../requirements.rst:65
+msgid "プリセットおよびプロファイル管理"
+msgstr "Presets & Profile Management"
+
+#: ../../requirements.rst:71
+msgid "簡単モードにおいて、高画質・標準・軽量化・白黒化・強制画像化の5つの基本プリセットから1つを選択でき、説明テキストが連動表示されること。"
+msgstr "In Simple Mode, one of five basic presets (High Quality, Standard, Lightweight, B&W Binarization, Forced Rasterization) shall be selectable, updating the displayed description text accordingly."
+
+#: ../../requirements.rst:77
+msgid ""
+"詳細設定を任意の名前で JSON プロファイルとして実行ファイル同階層の ``profiles/`` "
+"ディレクトリに保存・読み込み・削除できること。プロファイルのバージョン検証（v2以降）が行われること。"
+msgstr ""
+"Advanced settings shall be saveable, loadable, and removable as JSON profiles with arbitrary names under the ``profiles/`` directory in the same folder as the executable. Profile version verification (v2 or later) shall be performed."
+
+#: ../../requirements.rst:80
+msgid "最適化コア機能"
+msgstr "Core Optimization Features"
+
+#: ../../requirements.rst:86
+msgid ""
+"Color (JPEG再圧縮)、Gray (グレースケール変換)、Mono (白黒二値化 + CCITT Group 4 圧縮) "
+"のカラーモードを選択できること。"
+msgstr ""
+"The color mode shall be selectable among Color (JPEG re-compression), Gray (grayscale conversion), and Mono (B&W binarization + CCITT Group 4 compression)."
+
+#: ../../requirements.rst:92
+msgid "Mono モードにおいて、「大津の二値化 (Otsu)」または「誤差拡散ディザリング (Floyd-Steinberg)」を選択できること。"
+msgstr "In Mono mode, either 'Otsu Binarization (Otsu)' or 'Error Diffusion Dithering (Floyd-Steinberg)' shall be selectable."
+
+#: ../../requirements.rst:98
+msgid "リサイズ目標DPI（50, 72, 100, 150, 200, 300）および JPEG 圧縮品質（10～100%）を設定できること。"
+msgstr "Target resize DPI (50, 72, 100, 150, 200, 300) and JPEG compression quality (10-100%) shall be configurable."
+
+#: ../../requirements.rst:104
+msgid "既存テキストデータやレイアウトを保持して画像オブジェクトのみを差替える「テキスト保持モード」と、ページ全体を画像として再描画する「完全ラスタライズモード」を切り替えられること。"
+msgstr "Users shall be able to toggle between 'Text Retention Mode' (replacing only image objects while preserving text data and layout) and 'Full Rasterization Mode' (re-rendering the entire page as an image)."
+
+#: ../../requirements.rst:110
+msgid "注釈・コメント、リンク、しおり目次、AcroFormフォーム、XMLメタデータ、JavaScript/OpenAction、サムネイル画像を物理的に破棄できること。"
+msgstr "Annotations/comments, links, bookmarks/TOC, AcroForm forms, XML metadata, JavaScript/OpenAction, and thumbnail images shall be physically discardable."
+
+#: ../../requirements.rst:116
+msgid "使用文字のみのフォントサブセット化、および指定フォントの埋め込みストリームを削除して標準代替フォントに切り替えさせるフォント解除が実行できること。"
+msgstr "Font subsetting for used characters only, and font un-embedding (removing embedded font streams to fallback to standard fonts) shall be executable."
+
+#: ../../requirements.rst:119
+msgid "CUI モード (コマンドライン)"
+msgstr "CUI Mode (Command Line)"
+
+#: ../../requirements.rst:125
+msgid "コマンドライン引数に対象PDFを指定して起動した場合、GUIを表示せずに対話形式のコンソールメニューにより圧縮条件を設定・実行できること。"
+msgstr "When launched with a target PDF specified in command line arguments, compression settings shall be configurable and executable via an interactive console menu without displaying the GUI."
+
+#: ../../requirements.rst:129
+msgid "非機能要件 (Non-Functional Requirements)"
+msgstr "Non-Functional Requirements"
+
+#: ../../requirements.rst:135
+msgid "すべての依存クレートおよびライブラリは MIT, BSD, Apache-2.0 等のオープンかつ非GPLライセンスに準拠すること。"
+msgstr "All dependency crates and libraries shall comply with open, non-GPL licenses such as MIT, BSD, and Apache-2.0."
+
+#: ../../requirements.rst:141
+msgid "インストーラ不要で単体動作し、設定ファイルやプロファイルはすべて実行ファイルと同一ディレクトリ内で完結すること。"
+msgstr "The application shall operate standalone without an installer, and all configuration files and profiles shall be self-contained within the executable directory."
+
+#: ../../requirements.rst:147
+msgid "GUI起動時、Win32 API を用いて背面の黒いプロンプト画面を動的に非表示化すること。"
+msgstr "Upon GUI launch, the background black command prompt window shall be dynamically hidden using the Win32 API."
+
+

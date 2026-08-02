@@ -1,0 +1,258 @@
+# English translations for MinuoPDF package.
+# Copyright (C) 2026, MinuoPDF Contributors
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: MinuoPDF\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 22:56+0900\n"
+"PO-Revision-Date: 2026-07-25 23:00+0900\n"
+"Last-Translator: MinuoPDF Team\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../test_results.rst:3
+msgid "テスト実行結果 (Test Execution Results)"
+msgstr "Test Execution Results"
+
+#: ../../test_results.rst:5
+msgid "本ページは、MinuoPDF アプリケーションのすべてのテスト（単体テスト、結合テスト、適格性テスト、GUI E2Eテスト）の最新実行結果ログです。"
+msgstr "This page contains the latest execution logs for all tests (Unit, Integration, Qualification, and GUI E2E tests) of the MinuoPDF application."
+
+#: ../../test_results.rst:8
+msgid "総合テスト実行サマリー"
+msgstr "Overall Test Execution Summary"
+
+#: ../../test_results.rst:16 ../../test_results.rst:26
+#: ../../test_results.rst:36 ../../test_results.rst:46
+msgid "**最終実行日時**: 2026-07-25 22:49:32"
+msgstr "**Last Execution Date**: 2026-07-25 22:49:32"
+
+#: ../../test_results.rst:17
+msgid "**総合判定**: ``PASSED`` (14 PASSED / 0 FAILED / 計 14 テストケース)"
+msgstr "**Overall Result**: ``PASSED`` (14 PASSED / 0 FAILED / 14 Total Test Cases)"
+
+#: ../../test_results.rst:18
+msgid ""
+"**対象仕様**: :need:`TEST_UNIT_001`, :need:`TEST_UNIT_002`, "
+":need:`TEST_UNIT_003`, :need:`TEST_UNIT_004`"
+msgstr ""
+"**Target Specifications**: :need:`TEST_UNIT_001`, :need:`TEST_UNIT_002`, "
+":need:`TEST_UNIT_003`, :need:`TEST_UNIT_004`"
+
+#: ../../test_results.rst:27
+msgid "**総合判定**: ``PASSED`` (12 PASSED / 0 FAILED / 計 12 テストケース)"
+msgstr "**Overall Result**: ``PASSED`` (12 PASSED / 0 FAILED / 12 Total Test Cases)"
+
+#: ../../test_results.rst:28
+msgid ""
+"**対象仕様**: :need:`TEST_INT_001`, :need:`TEST_INT_002`, "
+":need:`TEST_INT_003`, :need:`TEST_INT_004`"
+msgstr ""
+"**Target Specifications**: :need:`TEST_INT_001`, :need:`TEST_INT_002`, "
+":need:`TEST_INT_003`, :need:`TEST_INT_004`"
+
+#: ../../test_results.rst:37
+msgid "**総合判定**: ``PASSED`` (3 PASSED / 0 FAILED / 計 3 テストケース)"
+msgstr "**Overall Result**: ``PASSED`` (3 PASSED / 0 FAILED / 3 Total Test Cases)"
+
+#: ../../test_results.rst:38
+msgid ""
+"**対象仕様**: :need:`TEST_QUAL_001`, :need:`TEST_QUAL_002`, "
+":need:`TEST_QUAL_003`"
+msgstr ""
+"**Target Specifications**: :need:`TEST_QUAL_001`, :need:`TEST_QUAL_002`, "
+":need:`TEST_QUAL_003`"
+
+#: ../../test_results.rst:47
+msgid "**総合判定**: ``PASSED`` (10 PASSED / 0 FAILED / 計 10 テストケース)"
+msgstr "**Overall Result**: ``PASSED`` (10 PASSED / 0 FAILED / 10 Total Test Cases)"
+
+#: ../../test_results.rst:48
+msgid ""
+"**対象仕様**: :need:`TEST_GUI_001`, :need:`TEST_GUI_002`, "
+":need:`TEST_GUI_003`, :need:`TEST_GUI_004`, :need:`TEST_GUI_005`"
+msgstr ""
+"**Target Specifications**: :need:`TEST_GUI_001`, :need:`TEST_GUI_002`, "
+":need:`TEST_GUI_003`, :need:`TEST_GUI_004`, :need:`TEST_GUI_005`"
+
+#: ../../test_results.rst:51
+msgid "単体テスト実行結果一覧 (Unit Tests)"
+msgstr "Unit Test Execution Results List (Unit Tests)"
+
+#: ../../test_results.rst:59 ../../test_results.rst:68
+#: ../../test_results.rst:77 ../../test_results.rst:86
+#: ../../test_results.rst:95 ../../test_results.rst:104
+#: ../../test_results.rst:113 ../../test_results.rst:122
+#: ../../test_results.rst:131 ../../test_results.rst:140
+#: ../../test_results.rst:149 ../../test_results.rst:158
+#: ../../test_results.rst:167 ../../test_results.rst:176
+#: ../../test_results.rst:188 ../../test_results.rst:197
+#: ../../test_results.rst:206 ../../test_results.rst:215
+#: ../../test_results.rst:224 ../../test_results.rst:233
+#: ../../test_results.rst:242 ../../test_results.rst:251
+#: ../../test_results.rst:260 ../../test_results.rst:269
+#: ../../test_results.rst:278 ../../test_results.rst:287
+#: ../../test_results.rst:299 ../../test_results.rst:309
+#: ../../test_results.rst:319
+msgid "**ステータス**: ``PASSED``"
+msgstr "**Status**: ``PASSED``"
+
+#: ../../test_results.rst:60 ../../test_results.rst:78
+msgid "**対象仕様**: :need:`TEST_UNIT_004`"
+msgstr "**Target Specification**: :need:`TEST_UNIT_004`"
+
+#: ../../test_results.rst:69 ../../test_results.rst:87
+#: ../../test_results.rst:96 ../../test_results.rst:105
+#: ../../test_results.rst:114 ../../test_results.rst:123
+msgid "**対象仕様**: :need:`TEST_UNIT_003`"
+msgstr "**Target Specification**: :need:`TEST_UNIT_003`"
+
+#: ../../test_results.rst:132 ../../test_results.rst:141
+#: ../../test_results.rst:168 ../../test_results.rst:177
+msgid "**対象仕様**: :need:`TEST_UNIT_002`"
+msgstr "**Target Specification**: :need:`TEST_UNIT_002`"
+
+#: ../../test_results.rst:150 ../../test_results.rst:159
+msgid "**対象仕様**: :need:`TEST_UNIT_001`"
+msgstr "**Target Specification**: :need:`TEST_UNIT_001`"
+
+#: ../../test_results.rst:180
+msgid "結合テスト実行結果一覧 (Integration Tests)"
+msgstr "Integration Test Execution Results List (Integration Tests)"
+
+#: ../../test_results.rst:189 ../../test_results.rst:225
+#: ../../test_results.rst:243
+msgid "**対象仕様**: :need:`TEST_INT_003`"
+msgstr "**Target Specification**: :need:`TEST_INT_003`"
+
+#: ../../test_results.rst:198 ../../test_results.rst:207
+#: ../../test_results.rst:216 ../../test_results.rst:234
+#: ../../test_results.rst:252
+msgid "**対象仕様**: :need:`TEST_INT_001`"
+msgstr "**Target Specification**: :need:`TEST_INT_001`"
+
+#: ../../test_results.rst:261 ../../test_results.rst:270
+#: ../../test_results.rst:279 ../../test_results.rst:288
+msgid "**対象仕様**: :need:`TEST_INT_002`"
+msgstr "**Target Specification**: :need:`TEST_INT_002`"
+
+#: ../../test_results.rst:291
+msgid "適格性テスト実行結果一覧 (Qualification Tests)"
+msgstr "Qualification Test Execution Results List (Qualification Tests)"
+
+#: ../../test_results.rst:300
+msgid "**検証概要**: カラー・グレー・スキャンモノクロPDFにおける圧縮性能と閲覧表示の健全性を確認"
+msgstr "**Verification Overview**: Confirmed compression performance and viewing integrity for color, grayscale, and scanned monochrome PDFs."
+
+#: ../../test_results.rst:301
+msgid "**対象仕様**: :need:`TEST_QUAL_001`"
+msgstr "**Target Specification**: :need:`TEST_QUAL_001`"
+
+#: ../../test_results.rst:310
+msgid ""
+"**検証概要**: すべての依存ライブラリ（lopdf, pdfium-render, image, "
+"fax等）のGPLフリー（MIT/BSD/Apache-2.0）適合を確認"
+msgstr ""
+"**Verification Overview**: Verified GPL-free compliance (MIT/BSD/Apache-2.0) for all dependency libraries (lopdf, pdfium-render, image, fax, etc.)."
+
+#: ../../test_results.rst:311
+msgid "**対象仕様**: :need:`TEST_QUAL_002`"
+msgstr "**Target Specification**: :need:`TEST_QUAL_002`"
+
+#: ../../test_results.rst:320
+msgid "**検証概要**: インストーラ不要での単独起動、同階層pdfium.dllのロードおよびプロンプト非表示(SW_HIDE)を確認"
+msgstr "**Verification Overview**: Verified standalone execution without installer, loading of pdfium.dll in the same directory, and console prompt hiding (SW_HIDE)."
+
+#: ../../test_results.rst:321
+msgid "**対象仕様**: :need:`TEST_QUAL_003`"
+msgstr "**Target Specification**: :need:`TEST_QUAL_003`"
+
+#: ../../test_results.rst:324
+msgid "E2E GUI テスト実行結果一覧 (GUI E2E Tests)"
+msgstr "GUI E2E Test Execution Results List (GUI E2E Tests)"
+
+#: ../../test_results.rst:332
+msgid "**ステータス**: ``PASSED`` (所要時間: 3938 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 3938 ms)"
+
+#: ../../test_results.rst:333
+msgid "**関連要件**: :need:`REQ_GUI_001`"
+msgstr "**Related Requirements**: :need:`REQ_GUI_001`"
+
+#: ../../test_results.rst:341
+msgid "**ステータス**: ``PASSED`` (所要時間: 4091 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 4091 ms)"
+
+#: ../../test_results.rst:342
+msgid "**関連要件**: :need:`REQ_GUI_002`"
+msgstr "**Related Requirements**: :need:`REQ_GUI_002`"
+
+#: ../../test_results.rst:350
+msgid "**ステータス**: ``PASSED`` (所要時間: 4045 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 4045 ms)"
+
+#: ../../test_results.rst:351
+msgid "**関連要件**: :need:`REQ_PROF_001`, :need:`REQ_GUI_003`"
+msgstr "**Related Requirements**: :need:`REQ_PROF_001`, :need:`REQ_GUI_003`"
+
+#: ../../test_results.rst:359
+msgid "**ステータス**: ``PASSED`` (所要時間: 3989 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 3989 ms)"
+
+#: ../../test_results.rst:360
+msgid "**関連要件**: :need:`REQ_PROF_001`"
+msgstr "**Related Requirements**: :need:`REQ_PROF_001`"
+
+#: ../../test_results.rst:368
+msgid "**ステータス**: ``PASSED`` (所要時間: 4197 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 4197 ms)"
+
+#: ../../test_results.rst:369
+msgid "**関連要件**: :need:`REQ_OPT_006`"
+msgstr "**Related Requirements**: :need:`REQ_OPT_006`"
+
+#: ../../test_results.rst:377
+msgid "**ステータス**: ``PASSED`` (所要時間: 3964 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 3964 ms)"
+
+#: ../../test_results.rst:378
+msgid "**関連要件**: :need:`REQ_FILE_003`"
+msgstr "**Related Requirements**: :need:`REQ_FILE_003`"
+
+#: ../../test_results.rst:386
+msgid "**ステータス**: ``PASSED`` (所要時間: 691 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 691 ms)"
+
+#: ../../test_results.rst:387
+msgid "**関連要件**: :need:`REQ_OPT_001`, :need:`REQ_OPT_002`, :need:`REQ_OPT_003`"
+msgstr "**Related Requirements**: :need:`REQ_OPT_001`, :need:`REQ_OPT_002`, :need:`REQ_OPT_003`"
+
+#: ../../test_results.rst:395
+msgid "**ステータス**: ``PASSED`` (所要時間: 757 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 757 ms)"
+
+#: ../../test_results.rst:396
+msgid "**関連要件**: :need:`REQ_OPT_005`"
+msgstr "**Related Requirements**: :need:`REQ_OPT_005`"
+
+#: ../../test_results.rst:404
+msgid "**ステータス**: ``PASSED`` (所要時間: 640 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 640 ms)"
+
+#: ../../test_results.rst:405
+msgid "**関連要件**: :need:`REQ_PROF_002`"
+msgstr "**Related Requirements**: :need:`REQ_PROF_002`"
+
+#: ../../test_results.rst:413
+msgid "**ステータス**: ``PASSED`` (所要時間: 561 ms)"
+msgstr "**Status**: ``PASSED`` (Duration: 561 ms)"
+
+#: ../../test_results.rst:414
+msgid "**関連要件**: :need:`REQ_GUI_004`, :need:`REQ_GUI_005`"
+msgstr "**Related Requirements**: :need:`REQ_GUI_004`, :need:`REQ_GUI_005`"
