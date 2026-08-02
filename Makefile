@@ -4,22 +4,22 @@
 # Default target
 all: help
 
-## build: Build the Tauri release binary and package into dist/
+## build: Build the Tauri release binary and package into dist/MinuoPDF/
 build:
 	python scripts/ensure_pdfium.py
 	@if [ ! -d "node_modules" ]; then echo "node_modules not found. Running npm install..."; npm install; fi
 	npx tauri build
-	@mkdir -p dist
-	@cp -f src-tauri/target/release/minuopdf dist/ 2>/dev/null || true
-	@cp -f src-tauri/target/release/minuopdf.exe dist/ 2>/dev/null || true
-	@cp -f src-tauri/resources/pdfium.dll dist/ 2>/dev/null || true
-	@cp -f src-tauri/resources/libpdfium.so dist/ 2>/dev/null || true
-	@cp -f README.ja.md dist/ 2>/dev/null || true
-	@cp -f README.md dist/ 2>/dev/null || true
-	@cp -f LICENSE.md dist/ 2>/dev/null || true
-	@mkdir -p dist/profiles
-	@cp -rf profiles/* dist/profiles/ 2>/dev/null || true
-	@echo "Build and packaging complete. Distribution ready in dist/"
+	@mkdir -p dist/MinuoPDF
+	@cp -f src-tauri/target/release/minuopdf dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f src-tauri/target/release/minuopdf.exe dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f src-tauri/resources/pdfium.dll dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f src-tauri/resources/libpdfium.so dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f README.ja.md dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f README.md dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f LICENSE.md dist/MinuoPDF/ 2>/dev/null || true
+	@mkdir -p dist/MinuoPDF/profiles
+	@cp -rf profiles/* dist/MinuoPDF/profiles/ 2>/dev/null || true
+	@echo "Build and packaging complete. Distribution ready in dist/MinuoPDF"
 
 ## dev: Start the Tauri dev environment
 dev:

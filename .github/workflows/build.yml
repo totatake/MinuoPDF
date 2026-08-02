@@ -149,42 +149,35 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Ensure PDFium shared library
-        run: python scripts/ensure_pdfium.py
+      - name: Build release distribution
+        run: make build
 
-      - name: Build Tauri app
-        run: npx tauri build
-
-      - name: Prepare Windows artifact
+      - name: Prepare Windows Distribution Package
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          mkdir -p dist-windows
-          cp -rf src-tauri/target/release/bundle/* dist-windows/ 2>/dev/null || true
-          cp -f src-tauri/target/release/minuopdf.exe dist-windows/ 2>/dev/null || true
-          cp -f src-tauri/resources/pdfium.dll dist-windows/ 2>/dev/null || true
+          mkdir -p release-dist/MinuoPDF-windows-x64
+          cp -rf dist/MinuoPDF/* release-dist/MinuoPDF-windows-x64/
 
-      - name: Prepare Linux artifact
+      - name: Prepare Linux Distribution Package
         if: runner.os == 'Linux'
         run: |
-          mkdir -p dist-linux
-          cp -rf src-tauri/target/release/bundle/* dist-linux/ 2>/dev/null || true
-          cp -f src-tauri/target/release/minuopdf dist-linux/ 2>/dev/null || true
-          cp -f src-tauri/resources/libpdfium.so dist-linux/ 2>/dev/null || true
+          mkdir -p release-dist/MinuoPDF-linux-x64
+          cp -rf dist/MinuoPDF/* release-dist/MinuoPDF-linux-x64/
 
-      - name: Upload Windows Bundle Artifact
+      - name: Upload Windows Distribution Artifact
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: minuopdf-windows-x64
-          path: dist-windows/
+          name: minuopdf-windows-x64-dist
+          path: release-dist/
 
-      - name: Upload Linux Bundle Artifact
+      - name: Upload Linux Distribution Artifact
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: minuopdf-linux-x64
-          path: dist-linux/
+          name: minuopdf-linux-x64-dist
+          path: release-dist/
 
   build-docs:
     name: Build Documentation
