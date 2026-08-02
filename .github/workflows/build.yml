@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Setup Rust toolchain
@@ -109,7 +109,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-24.04]
+        # Note: Linux runner uses 'ubuntu-22.04' instead of 'ubuntu-24.04' for maximum glibc & OS compatibility
+        # across wide Linux distributions while ensuring active security updates (standard support until 2027).
+        os: [windows-latest, ubuntu-22.04]
 
     steps:
       - name: Checkout repository
@@ -118,7 +120,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Setup Rust toolchain
