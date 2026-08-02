@@ -3,9 +3,13 @@ name: Build MinuoPDF, Test & Documentation
 on:
   push:
     branches: [ "main", "master" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
+
+env:
+  ACTIONS_ALLOW_NODE20: true
 
 jobs:
   test:
@@ -215,3 +219,42 @@ jobs:
         with:
           name: minuopdf-docs-html
           path: docs/_build/html/
+
+  release:
+    name: Create GitHub Release
+    needs: [build-app, build-docs]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Windows Distribution Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: minuopdf-windows-x64-dist
+          path: dist/
+
+      - name: Download Linux Distribution Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: minuopdf-linux-x64-dist
+          path: dist/
+
+      - name: Archive Release Packages
+        run: |
+          cd dist
+          zip -r ../MinuoPDF-windows-x64.zip MinuoPDF-windows-x64/
+          tar -czvf ../MinuoPDF-linux-x64.tar.gz MinuoPDF-linux-x64/
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            MinuoPDF-windows-x64.zip
+            MinuoPDF-linux-x64.tar.gz
+          generate_release_notes: true
