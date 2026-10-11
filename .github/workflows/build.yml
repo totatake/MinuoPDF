@@ -247,6 +247,7 @@ jobs:
       - name: Archive Release Packages
         run: |
           cd dist
+          chmod +x MinuoPDF-linux-x64/minuopdf
           zip -r ../MinuoPDF-windows-x64.zip MinuoPDF-windows-x64/
           tar -czvf ../MinuoPDF-linux-x64.tar.gz MinuoPDF-linux-x64/
           cd ..

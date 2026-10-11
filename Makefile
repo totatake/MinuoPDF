@@ -11,6 +11,7 @@ build:
 	npx tauri build
 	@mkdir -p dist/MinuoPDF
 	@cp -f src-tauri/target/release/minuopdf dist/MinuoPDF/ 2>/dev/null || true
+	@chmod +x dist/MinuoPDF/minuopdf 2>/dev/null || true
 	@cp -f src-tauri/target/release/minuopdf.exe dist/MinuoPDF/ 2>/dev/null || true
 	@cp -f src-tauri/resources/pdfium.dll dist/MinuoPDF/ 2>/dev/null || true
 	@cp -f src-tauri/resources/libpdfium.so dist/MinuoPDF/ 2>/dev/null || true
