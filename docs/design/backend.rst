@@ -14,26 +14,49 @@
    :id: DES_BE_001
    :links: ARCH_BE_OPT
 
-   - **主要関数**: ``optimize_pdf(input_path: &Path, output_path: &Path, config: &OptimizeConfig) -> Result<OptimizeResult>``
+   - **主要関数**: ``optimize_pdf_with_audit(input_path, output_path, config, progress_callback) -> Result<(u64, u64, Option<PdfAuditReport>, Option<PdfAuditReport>), String>``, ``optimize_pdf(...) -> Result<(u64, u64), String>``
    - **処理手順**:
-     1. ``lopdf::Document::load`` により PDF 構造をインメモリ読み込み。
-     2. ページオブジェクトツリーを走査し、画像 XObject (``/Subtype /Image``) を抽出。
-     3. カラーモード選択（Color / Gray / Mono）に応じた再圧縮処理：
+     1. ``lopdf::Document::load`` により PDF 構造をインメモリ読み込みし、直ちに ``audit_document`` で変換前容量内訳を収集。
+     2. 各ページのコンテンツストリームをパースし、現在変換行列（CTM）および描画オペレータ（``cm``, ``Do``）から画像の実効描画サイズ（pt）を推定。
+     3. ページリソース内の Form XObject（``/Subtype /Form``）を再帰走査して、ネストされた画像オブジェクトを完全抽出。
+     4. 画像タスク群（``ImageTask``）を構築し、``Rayon`` の ``into_par_iter()`` によりマルチコア並列でデコード・目標DPIリサイズ・再エンコード・SMask連動リサイズを実行。
+     5. Smart Fallback（逆圧縮ガード）により、無変換画像の肥大化時は元ストリームを自動維持。
+     6. 設定に応じた破棄処理（``/Annots``, ``/Outlines``, ``/AcroForm``, ``/Metadata``, ``/Names``, ``/Thumb`` 辞書キーの物理除去）。
+     7. フォント解除・フォントサブセット化、未使用オブジェクト消去（``delete_zero_length_streams``, ``prune_objects``）、および Deflate 圧縮。
+     8. ``doc.save_to`` による最適化済み PDF 出力、および保存済みインメモリ Document から直ちに ``audit_document`` で変換後容量内訳を生成（重複ディスクI/Oゼロ）。
 
-        - Color/Gray: ``image::codecs::jpeg::JpegEncoder`` による Quality 指定再圧縮。
-        - Mono: ``大津の二値化`` または ``Floyd-Steinberg ディザリング`` 変換後、``fax::encode_g4`` による CCITT Group 4 エンコード。
+.. design:: image_util.rs - 画像エンコード一元化モジュール
+   :id: DES_BE_IMG
+   :links: ARCH_BE_OPT, ARCH_BE_RAST
 
-     4. 設定に応じた破棄処理（``/Annots``, ``/Outlines``, ``/AcroForm``, ``/Metadata`` 辞書キーの除去）。
-     5. ``doc.save`` による最適化済み PDF の出力保存。
+   - **主要構造体・関数**: ``EncodedPdfImage``, ``encode_image_stream(img, format, quality, mono_method) -> Result<EncodedPdfImage, String>``
+   - JPEG（RGB/Gray）、PNG/FlateDecode、および CCITT Group 4（Otsu / Floyd-Steinberg 二値化 + ``fax::encode_g4``）のエンコード処理を一元管理。
+   - PDF 辞書に必要な ``ColorSpace``, ``BitsPerComponent``, ``Filter``, ``DecodeParms``（Group 4 パラメータ等）を過不足なく生成。
 
 .. design:: rasterizer.rs - ページ全体ラスタライズ
    :id: DES_BE_RAST
    :links: ARCH_BE_RAST
 
-   - **主要関数**: ``rasterize_pdf_pages(doc: &Document, dpi: u32) -> Result<Vec<DynamicImage>>``
-   - ``pdfium-render`` の ``Pdfium`` インスタンスを生成し、全ページをターゲット DPI で Bitmap レンダリングして画像配列を取得する。
+   - **主要関数**: ``rasterize_pdf_with_audit(...)``, ``rasterize_pdf(...)``
+   - ``pdfium-render`` の ``Pdfium`` インスタンスを生成し、全ページをターゲット DPI で Bitmap レンダリング。
+   - レンダリング画像を ``image_util::encode_image_stream`` にて再圧縮し、新しい空の PDF ドキュメントへページ毎にストリーム配置して出力。
 
-.. design:: font_subsetter.rs & font_unembedder.rs - フォント処理
+.. design:: audit.rs - PDF容量内訳解析モジュール
+   :id: DES_BE_AUDIT
+   :links: ARCH_BE_AUDIT
+
+   - **主要構造体・関数**: ``PdfAuditReport``, ``PdfAuditComparison``, ``audit_pdf(path)``, ``audit_document(doc, file_name, total_bytes)``
+   - PDF 内の全オブジェクトを走査し、Images, Fonts, Content Streams, Metadata/Catalog, Struct/Forms, Other の6カテゴリに完全分類。
+   - ディスクからのファイルパス指定実行と、最適化パイプライン内で開かれたインメモリ Document 参照からの直接解析の両方をサポート。
+
+.. design:: cli.rs - CLI コマンドライン実行モジュール
+   :id: DES_BE_CLI
+   :links: ARCH_BE_CLI
+
+   - **主要関数**: ``run_interactive_cli(input_path)``, ``run_batch_cli(input_paths, output, preset, profile, strategy)``
+   - 引数指定による完全非対話ヘッドレスバッチ圧縮と、単体ファイル指定時の矢印キー対話式メニューを両立。
+
+.. design:: font_subsetter.rs - フォント処理
    :id: DES_BE_FONT
    :links: ARCH_BE_FONT
 

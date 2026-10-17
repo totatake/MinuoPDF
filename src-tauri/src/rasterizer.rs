@@ -4,16 +4,26 @@ use std::path::Path;
 use crate::pdfium_util;
 use crate::image_util;
 use crate::optimizer::OptimizeConfig;
+use crate::audit::{audit_pdf, audit_document, PdfAuditReport};
 
-/// PDFの全ページをラスタライズし、新しい画像のみのPDFファイルを構築します。
-pub fn rasterize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
+/// PDFの全ページをラスタライズし、新しい画像のみのPDFファイルを構築し、監査結果も返す。
+pub fn rasterize_pdf_with_audit<P: AsRef<Path>, Q: AsRef<Path>>(
     input_path: P,
     output_path: Q,
     config: &OptimizeConfig,
     progress_callback: impl Fn(usize, usize) + Send + Sync + 'static,
-) -> Result<(u64, u64), String> {
+) -> Result<(u64, u64, Option<PdfAuditReport>, Option<PdfAuditReport>), String> {
+    let in_path = input_path.as_ref();
+    let file_name = in_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("Unknown")
+        .to_string();
+
+    let orig_audit = audit_pdf(in_path).ok();
+
     let pdfium = pdfium_util::load_pdfium()?;
-    let pdfium_doc = pdfium.load_pdf_from_file(input_path.as_ref(), None)
+    let pdfium_doc = pdfium.load_pdf_from_file(in_path, None)
         .map_err(|e| format!("Failed to load PDF in Pdfium: {:?}", e))?;
 
     let total_pages = pdfium_doc.pages().len() as usize;
@@ -62,90 +72,21 @@ pub fn rasterize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
         // pdfium-render が返したピクセルデータを取得
         let img = bitmap.as_image();
 
-        let img_bytes: Vec<u8>;
-        let final_w: u32;
-        let final_h: u32;
-        let format_lower = active_config.format.to_lowercase();
-        let filter_name: Vec<u8>;
-        let bits_per_component: i64;
-
-        if mode == "mono" {
-            let gray = img.to_luma8();
-            let mono_method = active_config.mono_method.as_deref().unwrap_or("threshold");
-            let binarized = if mono_method == "dither" {
-                image_util::apply_floyd_steinberg(&gray)
-            } else {
-                image_util::apply_otsu(&gray)
-            };
-            
-            final_w = binarized.width();
-            final_h = binarized.height();
-
-            if format_lower == "zip" || format_lower == "lzw" {
-                let packed_bytes = image_util::pack_mono_image(&binarized);
-                img_bytes = image_util::compress_deflate(&packed_bytes)
-                    .map_err(|e| format!("Deflate compression failed: {:?}", e))?;
-                filter_name = b"FlateDecode".to_vec();
-                bits_per_component = 1;
-            } else {
-                img_bytes = image_util::encode_g4(&binarized)
-                    .map_err(|e| format!("G4 encoding failed: {:?}", e))?;
-                filter_name = b"CCITTFaxDecode".to_vec();
-                bits_per_component = 1;
-            }
-        } else if mode == "gray" {
-            let gray = img.to_luma8();
-            final_w = gray.width();
-            final_h = gray.height();
-            if format_lower == "zip" || format_lower == "lzw" {
-                let raw_pixels = gray.as_raw();
-                img_bytes = image_util::compress_deflate(raw_pixels)
-                    .map_err(|e| format!("Deflate compression failed: {:?}", e))?;
-                filter_name = b"FlateDecode".to_vec();
-                bits_per_component = 8;
-            } else {
-                img_bytes = image_util::encode_jpeg_luma(&gray, active_config.quality)
-                    .map_err(|e| format!("JPEG encoding failed: {:?}", e))?;
-                filter_name = b"DCTDecode".to_vec();
-                bits_per_component = 8;
-            }
-        } else {
-            final_w = img.width();
-            final_h = img.height();
-            if format_lower == "zip" || format_lower == "lzw" {
-                let rgb = img.to_rgb8();
-                let raw_pixels = rgb.as_raw();
-                img_bytes = image_util::compress_deflate(raw_pixels)
-                    .map_err(|e| format!("Deflate compression failed: {:?}", e))?;
-                filter_name = b"FlateDecode".to_vec();
-                bits_per_component = 8;
-            } else {
-                img_bytes = image_util::encode_jpeg_rgb(&img, active_config.quality)
-                    .map_err(|e| format!("JPEG encoding failed: {:?}", e))?;
-                filter_name = b"DCTDecode".to_vec();
-                bits_per_component = 8;
-            }
-        }
+        let encoded = image_util::encode_image_stream(&img, mode, active_config)?;
 
         // 1. 画像オブジェクトを作成して lopdf に追加
         let img_id = doc.new_object_id();
-        let mut img_stream = Stream::new(Dictionary::new(), img_bytes);
+        let mut img_stream = Stream::new(Dictionary::new(), encoded.data);
         img_stream.dict.set("Type", Object::Name(b"XObject".to_vec()));
         img_stream.dict.set("Subtype", Object::Name(b"Image".to_vec()));
-        img_stream.dict.set("Width", final_w as i64);
-        img_stream.dict.set("Height", final_h as i64);
+        img_stream.dict.set("Width", encoded.width as i64);
+        img_stream.dict.set("Height", encoded.height as i64);
+        img_stream.dict.set("ColorSpace", Object::Name(encoded.color_space));
+        img_stream.dict.set("BitsPerComponent", encoded.bits_per_component);
+        img_stream.dict.set("Filter", Object::Name(encoded.filter));
 
-        let color_space = if mode == "color" { b"DeviceRGB".to_vec() } else { b"DeviceGray".to_vec() };
-        img_stream.dict.set("ColorSpace", Object::Name(color_space));
-        img_stream.dict.set("BitsPerComponent", bits_per_component);
-        img_stream.dict.set("Filter", Object::Name(filter_name.clone()));
-
-        if filter_name == b"CCITTFaxDecode" {
-            let mut decode_parms = Dictionary::new();
-            decode_parms.set("Columns", final_w as i64);
-            decode_parms.set("Rows", final_h as i64);
-            decode_parms.set("K", -1);
-            img_stream.dict.set("DecodeParms", Object::Dictionary(decode_parms));
+        if let Some(dp) = encoded.decode_parms {
+            img_stream.dict.set("DecodeParms", Object::Dictionary(dp));
         } else {
             img_stream.dict.remove(b"DecodeParms");
         }
@@ -212,7 +153,21 @@ pub fn rasterize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
     let orig_size = std::fs::metadata(&input_path).map(|m| m.len()).unwrap_or(0);
     let opt_size = std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
 
+    // インメモリ監査（保存済み Document オブジェクトから直接計算）
+    let opt_audit = Some(audit_document(&doc, file_name, opt_size));
+
     progress_callback(total_pages, total_pages);
 
-    Ok((orig_size, opt_size))
+    Ok((orig_size, opt_size, orig_audit, opt_audit))
+}
+
+/// 従来のシグネチャを維持するラスタライズメイン関数
+pub fn rasterize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
+    input_path: P,
+    output_path: Q,
+    config: &OptimizeConfig,
+    progress_callback: impl Fn(usize, usize) + Send + Sync + 'static,
+) -> Result<(u64, u64), String> {
+    rasterize_pdf_with_audit(input_path, output_path, config, progress_callback)
+        .map(|(orig, opt, _, _)| (orig, opt))
 }

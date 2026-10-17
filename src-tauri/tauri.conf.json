@@ -13,9 +13,11 @@
     "windows": [
       {
         "title": "MinuoPDF",
-        "width": 680,
-        "height": 530,
-        "resizable": false
+        "width": 740,
+        "height": 560,
+        "minWidth": 680,
+        "minHeight": 520,
+        "resizable": true
       }
     ],
     "security": {

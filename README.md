@@ -17,7 +17,13 @@
 
 ## ✨ Key Features
 
-- **🚀 Ultra-lightweight & Portable**: No installer required. Standalone executable (~4.3 MB) that loads `pdfium.dll` automatically from its directory.
+- **🚀 Ultra-lightweight & Portable**: No installer required. Standalone executable loading PDFium automatically from its directory.
+- **⚡ Smart Fallback & Precision Optimization**:
+  - **CTM Effective DPI**: Calculates on-page effective display DPI (pt) using Content Stream transformation matrices.
+  - **Form XObject & SMask**: Recursively traverses `/Subtype /Form` objects and synchronizes soft masks (`SMask`) on resize.
+  - **Smart Fallback Guard**: Automatically preserves original streams if re-encoding would enlarge image size.
+  - **Rayon Concurrency**: Multi-core parallel image decoding, resizing, and re-encoding.
+- **📊 PDF Audit Breakdown**: Inspect size composition (Images, Fonts, Content Streams, Metadata, Struct/Forms, Other) with interactive bar charts and pre/post comparison.
 - **🎨 Flexible Color Compression**:
   - **Color**: High-efficiency JPEG re-compression.
   - **Grayscale**: Grayscale conversion with customizable JPEG quality.
@@ -29,7 +35,26 @@
   - **Subsetting**: Retains only characters actually used in the document.
   - **Unembedding (Unembed Fonts)**: Strips embedded font streams (`FontFile2`/`FontFile3`), leveraging standard system fonts for extreme size savings.
 - **🧹 Deep Object Cleanup**: Strip annotations, outlines, links, AcroForms, XML metadata, JavaScript, and thumbnail previews.
-- **🌐 Dual Mode & i18n**: Modern GUI (Tauri v2 + Svelte 5 with Catppuccin Mocha theme) and interactive CLI console mode. Fully supports **English** and **Japanese**.
+- **🌐 Dual Mode & Non-interactive CLI**:
+  - Modern GUI (Tauri v2 + Svelte 5, Catppuccin Mocha theme, resizable 740×560px with min 680×520px bounds, ja/en i18n).
+  - Headless batch CLI (`-o`, `-p`, `--profile`, `-s`, `-b`) and interactive arrow-key console menu.
+
+---
+
+## 💻 CLI Usage
+
+MinuoPDF supports headless scripting and batch processing:
+
+```bash
+# Optimize with preset
+minuopdf document.pdf -o optimized.pdf -p light
+
+# Optimize with custom profile and rasterize strategy
+minuopdf scan.pdf -o out.pdf --profile my_rule -s rasterize
+
+# Batch optimize multiple PDFs into target directory
+minuopdf a.pdf b.pdf c.pdf -b dist/ -p standard
+```
 
 ---
 

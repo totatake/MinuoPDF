@@ -11,8 +11,8 @@ use tauri::{Emitter, Window};
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
 
-use optimizer::{OptimizeConfig, optimize_pdf};
-use rasterizer::rasterize_pdf;
+use optimizer::{OptimizeConfig, optimize_pdf_with_audit};
+use rasterizer::rasterize_pdf_with_audit;
 use profile::{load_all_profiles, save_profile, delete_profile, get_default_config, get_preset_config};
 use audit::{audit_pdf, PdfAuditComparison};
 
@@ -198,76 +198,76 @@ async fn optimize_pdf_cmd(
     config: OptimizeConfig,
     strategy: String,
 ) -> Result<(), String> {
-    for path_str in &input_paths {
-        let path = normalize_pdf_path(path_str);
-        let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("Unknown").to_string();
-        
-        let path_str_clone = path_str.clone();
-        let window_clone = window.clone();
-        
-        // 進捗コールバック
-        let file_name_for_cb = file_name.clone();
-        let progress_cb = move |curr, tot| {
-            let _ = window_clone.emit("optimization-progress", ProgressPayload {
-                file_path: path_str_clone.clone(),
-                current: curr,
-                total: tot,
-                message: format!("Processing {}... ({}/{})", file_name_for_cb, curr, tot),
-            });
-        };
-
-        // 変換前容量調査
-        let orig_audit = audit_pdf(&path).ok();
-
-        // 出力先を [元ファイル名]_optimized.pdf に設定
-        let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("pdf");
-        let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
-        let out_dir = path.parent().unwrap_or_else(|| std::path::Path::new("."));
-        let output_path = out_dir.join(format!("{}_optimized.{}", stem, ext));
-
-        // 実行
-        let result = if strategy == "rasterize" {
-            rasterize_pdf(&path, &output_path, &config, progress_cb)
-        } else {
-            optimize_pdf(&path, &output_path, &config, progress_cb)
-        };
-
-        match result {
-            Ok((orig, opt)) => {
-                // 変換後容量調査
-                let opt_audit = audit_pdf(&output_path).ok();
-                let audit_comp = orig_audit.map(|o| PdfAuditComparison {
-                    original: o,
-                    optimized: opt_audit,
+    tauri::async_runtime::spawn_blocking(move || {
+        for path_str in &input_paths {
+            let path = normalize_pdf_path(path_str);
+            let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("Unknown").to_string();
+            
+            let path_str_clone = path_str.clone();
+            let window_clone = window.clone();
+            
+            // 進捗コールバック
+            let file_name_for_cb = file_name.clone();
+            let progress_cb = move |curr, tot| {
+                let _ = window_clone.emit("optimization-progress", ProgressPayload {
+                    file_path: path_str_clone.clone(),
+                    current: curr,
+                    total: tot,
+                    message: format!("Processing {}... ({}/{})", file_name_for_cb, curr, tot),
                 });
+            };
 
-                let _ = window.emit("optimization-log", LogPayload {
-                    file_path: path_str.clone(),
-                    success: true,
-                    orig_size: orig,
-                    opt_size: opt,
-                    message: format!(
-                        "Success {}: {} KB -> {} KB ({:.1}% reduction)",
-                        file_name,
-                        orig / 1024,
-                        opt / 1024,
-                        if orig > 0 { (1.0 - (opt as f64 / orig as f64)) * 100.0 } else { 0.0 }
-                    ),
-                    audit: audit_comp,
-                });
-            }
-            Err(e) => {
-                let _ = window.emit("optimization-log", LogPayload {
-                    file_path: path_str.clone(),
-                    success: false,
-                    orig_size: 0,
-                    opt_size: 0,
-                    message: format!("Failed {}: {}", file_name, e),
-                    audit: None,
-                });
+            // 出力先を [元ファイル名]_optimized.pdf に設定
+            let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("pdf");
+            let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
+            let out_dir = path.parent().unwrap_or_else(|| std::path::Path::new("."));
+            let output_path = out_dir.join(format!("{}_optimized.{}", stem, ext));
+
+            // 実行（監査もインメモリで同時に実行され、重複ディスクロードを防止）
+            let result = if strategy == "rasterize" {
+                rasterize_pdf_with_audit(&path, &output_path, &config, progress_cb)
+            } else {
+                optimize_pdf_with_audit(&path, &output_path, &config, progress_cb)
+            };
+
+            match result {
+                Ok((orig, opt, orig_audit, opt_audit)) => {
+                    let audit_comp = orig_audit.map(|o| PdfAuditComparison {
+                        original: o,
+                        optimized: opt_audit,
+                    });
+
+                    let _ = window.emit("optimization-log", LogPayload {
+                        file_path: path_str.clone(),
+                        success: true,
+                        orig_size: orig,
+                        opt_size: opt,
+                        message: format!(
+                            "Success {}: {} KB -> {} KB ({:.1}% reduction)",
+                            file_name,
+                            orig / 1024,
+                            opt / 1024,
+                            if orig > 0 { (1.0 - (opt as f64 / orig as f64)) * 100.0 } else { 0.0 }
+                        ),
+                        audit: audit_comp,
+                    });
+                }
+                Err(e) => {
+                    let _ = window.emit("optimization-log", LogPayload {
+                        file_path: path_str.clone(),
+                        success: false,
+                        orig_size: 0,
+                        opt_size: 0,
+                        message: format!("Failed {}: {}", file_name, e),
+                        audit: None,
+                    });
+                }
             }
         }
-    }
+    })
+    .await
+    .map_err(|e| format!("Task execution failed: {:?}", e))?;
+
     Ok(())
 }
 

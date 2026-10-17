@@ -1,7 +1,9 @@
 use lopdf::{Document, Object, ObjectId, Dictionary};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+use rayon::prelude::*;
 use crate::image_util;
+use crate::audit::{audit_document, PdfAuditReport};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ImageConfig {
@@ -41,15 +43,26 @@ pub struct OptimizeConfig {
     pub force_rasterize: bool,
 }
 
-/// PDFを最適化するメイン処理
-pub fn optimize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
+/// PDFを最適化し、監査結果（インメモリ計算）も併せて返す
+pub fn optimize_pdf_with_audit<P: AsRef<Path>, Q: AsRef<Path>>(
     input_path: P,
     output_path: Q,
     config: &OptimizeConfig,
     progress_callback: impl Fn(usize, usize) + Send + Sync + 'static,
-) -> Result<(u64, u64), String> {
-    let mut doc = Document::load(&input_path).map_err(|e| format!("Failed to load PDF: {:?}", e))?;
+) -> Result<(u64, u64, Option<PdfAuditReport>, Option<PdfAuditReport>), String> {
+    let in_path = input_path.as_ref();
+    let file_name = in_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("Unknown")
+        .to_string();
+
+    let orig_size = std::fs::metadata(in_path).map(|m| m.len()).unwrap_or(0);
+    let mut doc = Document::load(in_path).map_err(|e| format!("Failed to load PDF: {:?}", e))?;
     
+    // インメモリ監査（ディスク再ロードを防止）
+    let orig_audit = Some(audit_document(&doc, file_name.clone(), orig_size));
+
     // 1. 各ページの情報を走査し、画像とその表示領域（推定）のマップを作成する
     let page_ids = doc.get_pages();
     let total_pages = page_ids.len();
@@ -89,240 +102,233 @@ pub fn optimize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
             (595.27, 841.89)
         };
 
-        // ページのリソース辞書内の XObject を走査
-        let resources = match page_dict.get(b"Resources") {
-            Ok(Object::Reference(id)) => doc.get_object(*id).ok().and_then(|obj| obj.as_dict().ok()),
-            Ok(Object::Dictionary(d)) => Some(d),
-            _ => None,
-        };
+        // ページのコンテンツストリームから CTM / Do オペレータを走査して実際の表示サイズ (pt) を推定
+        let content_bytes = get_page_content_bytes(&doc, page_dict);
+        let mut page_ctm_map = HashMap::new();
+        extract_image_ctm_sizes(&content_bytes, &mut page_ctm_map);
 
-        if let Some(resources_dict) = resources {
+        // ページのリソース辞書内の XObject を走査 (Form XObject は再帰走査)
+        scan_xobjects_recursive(
+            &doc,
+            page_dict,
+            media_box,
+            &page_ctm_map,
+            &mut image_sizes,
+            &mut HashSet::new(),
+        );
+    }
 
-            let xobjects = match resources_dict.get(b"XObject") {
-                Ok(Object::Reference(id)) => doc.get_object(*id).ok().and_then(|obj| obj.as_dict().ok()),
-                Ok(Object::Dictionary(d)) => Some(d),
-                _ => None,
+    // 2. 画像の最適化（置換）：画像タスクを収集して Rayon で並列処理
+    let total_images = image_sizes.len();
+
+    // 抽出に必要なデータを収集
+    struct ImageTask {
+        img_id: ObjectId,
+        max_w_pt: f32,
+        max_h_pt: f32,
+        stream_obj: lopdf::Stream,
+        smask_ref: Option<ObjectId>,
+        smask_stream: Option<lopdf::Stream>,
+    }
+
+    struct ImageResult {
+        img_id: ObjectId,
+        encoded: Option<image_util::EncodedPdfImage>,
+        smask_ref: Option<ObjectId>,
+        smask_data: Option<(u32, u32, Vec<u8>)>,
+    }
+
+    let mut tasks = Vec::with_capacity(total_images);
+    for (&img_id, &(max_w_pt, max_h_pt)) in image_sizes.iter() {
+        if let Ok(Object::Stream(s)) = doc.get_object(img_id) {
+            let smask_ref = s.dict.get(b"SMask").and_then(|o| o.as_reference()).ok();
+            let smask_stream = if let Some(sr) = smask_ref {
+                doc.get_object(sr).ok().and_then(|o| o.as_stream().cloned().ok())
+            } else {
+                None
+            };
+            tasks.push(ImageTask {
+                img_id,
+                max_w_pt,
+                max_h_pt,
+                stream_obj: s.clone(),
+                smask_ref,
+                smask_stream,
+            });
+        }
+    }
+
+    // Rayon による画像デコード・リサイズ・再エンコードの並列実行
+    let results: Vec<ImageResult> = tasks
+        .into_par_iter()
+        .map(|task| {
+            let width = task.stream_obj.dict.get(b"Width").and_then(|o| o.as_i64()).unwrap_or(0) as u32;
+            let height = task.stream_obj.dict.get(b"Height").and_then(|o| o.as_i64()).unwrap_or(0) as u32;
+            if width == 0 || height == 0 {
+                return ImageResult {
+                    img_id: task.img_id,
+                    encoded: None,
+                    smask_ref: None,
+                    smask_data: None,
+                };
+            }
+
+            let original_compressed_len = task.stream_obj.content.len();
+            let mut decompressed_stream = task.stream_obj.clone();
+            let _ = decompressed_stream.decompress();
+            let data = decompressed_stream.content;
+
+            let bits_per_component = task.stream_obj.dict.get(b"BitsPerComponent").and_then(|o| o.as_i64()).unwrap_or(8) as u32;
+            let img = match load_raw_pdf_image(&data, width, height, bits_per_component) {
+                Some(i) => i,
+                None => {
+                    return ImageResult {
+                        img_id: task.img_id,
+                        encoded: None,
+                        smask_ref: None,
+                        smask_data: None,
+                    };
+                }
             };
 
-            if let Some(xobjects_dict) = xobjects {
-                for (_, xobj_ref) in xobjects_dict.iter() {
-                    if let Ok(xobj_id) = xobj_ref.as_reference() {
-                        if let Ok(xobj_stream) = doc.get_object(xobj_id).and_then(|obj| obj.as_stream()) {
-                            if let Ok(Object::Name(ref subtype)) = xobj_stream.dict.get(b"Subtype") {
-                                if subtype == b"Image" {
-                                    // 一旦そのページのMediaBoxを最大表示サイズとする
-                                    let entry = image_sizes.entry(xobj_id).or_insert((0.0, 0.0));
-                                    entry.0 = entry.0.max(media_box.0);
-                                    entry.1 = entry.1.max(media_box.1);
-                                }
+            let color_space = task.stream_obj.dict.get(b"ColorSpace").ok();
+            let is_originally_mono = bits_per_component == 1;
+            let is_originally_gray = if let Some(Object::Name(name)) = color_space {
+                name == b"DeviceGray"
+            } else {
+                false
+            };
+
+            let mode = if config.color_conv == "mono" || is_originally_mono {
+                "mono"
+            } else if config.color_conv == "gray" || is_originally_gray {
+                "gray"
+            } else {
+                "color"
+            };
+
+            let active_config = match mode {
+                "mono" => &config.mono_img,
+                "gray" => &config.gray_img,
+                _ => &config.color_img,
+            };
+
+            let target_dpi = active_config.target_dpi;
+            let threshold_dpi = active_config.threshold_dpi;
+
+            let est_w_in = task.max_w_pt / 72.0;
+            let est_h_in = task.max_h_pt / 72.0;
+            let current_dpi_w = if est_w_in > 0.0 { width as f32 / est_w_in } else { 300.0 };
+            let current_dpi_h = if est_h_in > 0.0 { height as f32 / est_h_in } else { 300.0 };
+            let current_dpi = current_dpi_w.max(current_dpi_h);
+
+            let mut processed_img = img;
+            let mut resized = false;
+            let mut final_target_w = width;
+            let mut final_target_h = height;
+
+            if active_config.downsample != "off" && current_dpi > threshold_dpi as f32 {
+                let target_w = (est_w_in * target_dpi as f32).round() as u32;
+                let target_h = (est_h_in * target_dpi as f32).round() as u32;
+
+                if target_w < width && target_h < height && target_w > 0 && target_h > 0 {
+                    processed_img = image_util::resize_image(&processed_img, target_w, target_h, &active_config.downsample);
+                    resized = true;
+                    final_target_w = target_w;
+                    final_target_h = target_h;
+                }
+            }
+
+            if active_config.format == "off" && !resized {
+                return ImageResult {
+                    img_id: task.img_id,
+                    encoded: None,
+                    smask_ref: None,
+                    smask_data: None,
+                };
+            }
+
+            let encoded = match image_util::encode_image_stream(&processed_img, mode, active_config) {
+                Ok(enc) => enc,
+                Err(_) => {
+                    return ImageResult {
+                        img_id: task.img_id,
+                        encoded: None,
+                        smask_ref: None,
+                        smask_data: None,
+                    };
+                }
+            };
+
+            // スマートフォールバックガード
+            let is_color_converted = (config.color_conv == "mono" && !is_originally_mono)
+                || (config.color_conv == "gray" && !is_originally_gray && !is_originally_mono);
+            if !is_color_converted && !resized && encoded.data.len() >= original_compressed_len {
+                return ImageResult {
+                    img_id: task.img_id,
+                    encoded: None,
+                    smask_ref: None,
+                    smask_data: None,
+                };
+            }
+
+            // SMask 連動リサイズ処理
+            let mut smask_data = None;
+            if resized {
+                if let Some(smask_stream) = task.smask_stream {
+                    let mut smask_decomp = smask_stream.clone();
+                    let _ = smask_decomp.decompress();
+                    let smask_w = smask_stream.dict.get(b"Width").and_then(|o| o.as_i64()).unwrap_or(0) as u32;
+                    let smask_h = smask_stream.dict.get(b"Height").and_then(|o| o.as_i64()).unwrap_or(0) as u32;
+                    if smask_w > 0 && smask_h > 0 {
+                        if let Some(smask_img) = load_raw_pdf_image(&smask_decomp.content, smask_w, smask_h, 8) {
+                            let smask_resized = image_util::resize_image(&smask_img, final_target_w, final_target_h, &active_config.downsample);
+                            let gray_mask = smask_resized.to_luma8();
+                            if let Ok(deflated) = image_util::compress_deflate(gray_mask.as_raw()) {
+                                smask_data = Some((final_target_w, final_target_h, deflated));
                             }
                         }
                     }
                 }
             }
-        }
-    }
 
-    // 2. 画像の最適化（置換）
-    let total_images = image_sizes.len();
-    for (img_idx, (&img_id, &(max_w_pt, max_h_pt))) in image_sizes.iter().enumerate() {
-        // 画像処理中の進捗をコールバックに通知 (適当に分散させる)
+            ImageResult {
+                img_id: task.img_id,
+                encoded: Some(encoded),
+                smask_ref: task.smask_ref,
+                smask_data,
+            }
+        })
+        .collect();
+
+    // 順次 PDF ドキュメントへ適用
+    for (img_idx, res) in results.into_iter().enumerate() {
         progress_callback(total_pages + img_idx, total_pages + total_images);
+        if let Some(encoded) = res.encoded {
+            if let Ok(Object::Stream(ref mut stream)) = doc.get_object_mut(res.img_id) {
+                stream.dict.set("Width", encoded.width as i64);
+                stream.dict.set("Height", encoded.height as i64);
+                stream.dict.set("ColorSpace", Object::Name(encoded.color_space));
+                stream.dict.set("BitsPerComponent", encoded.bits_per_component);
+                stream.dict.set("Filter", Object::Name(encoded.filter));
 
-        let mut stream_obj = match doc.get_object(img_id) {
-            Ok(Object::Stream(s)) => s.clone(),
-            _ => continue,
-        };
-
-        // 元の画像サイズ取得
-        let width = stream_obj.dict.get(b"Width").and_then(|o| o.as_i64()).unwrap_or(0) as u32;
-        let height = stream_obj.dict.get(b"Height").and_then(|o| o.as_i64()).unwrap_or(0) as u32;
-        if width == 0 || height == 0 { continue; }
-
-        // 元データの取得 (デコンプレス実行)
-        let _ = stream_obj.decompress();
-        let data = stream_obj.content.clone();
-
-        // image crate またはカスタムデコーダで読み込み
-        let bits_per_component = stream_obj.dict.get(b"BitsPerComponent").and_then(|o| o.as_i64()).unwrap_or(8) as u32;
-        let img = match load_raw_pdf_image(&data, width, height, bits_per_component) {
-            Some(i) => i,
-            None => continue, // デコードできない形式はスキップ
-        };
-
-        // 圧縮ポリシーの決定
-        let color_space = stream_obj.dict.get(b"ColorSpace").ok();
-        let is_originally_mono = match stream_obj.dict.get(b"BitsPerComponent").and_then(|o| o.as_i64()) {
-            Ok(1) => true,
-            _ => false,
-        };
-        let is_originally_gray = if let Some(Object::Name(name)) = color_space {
-            name == b"DeviceGray"
-        } else {
-            false
-        };
-
-        // 最適化設定の決定 (Color/Gray/Mono のどれとして扱うか)
-        let mode = if config.color_conv == "mono" || is_originally_mono {
-            "mono"
-        } else if config.color_conv == "gray" || is_originally_gray {
-            "gray"
-        } else {
-            "color"
-        };
-
-        let active_config = match mode {
-            "mono" => &config.mono_img,
-            "gray" => &config.gray_img,
-            _ => &config.color_img,
-        };
-
-        // 目標DPIに基づくリサイズ計算
-        let target_dpi = active_config.target_dpi;
-        let threshold_dpi = active_config.threshold_dpi;
-        
-        // 推定DPI = width / (max_w_pt / 72)
-        let est_w_in = max_w_pt / 72.0;
-        let est_h_in = max_h_pt / 72.0;
-        let current_dpi_w = if est_w_in > 0.0 { width as f32 / est_w_in } else { 300.0 };
-        let current_dpi_h = if est_h_in > 0.0 { height as f32 / est_h_in } else { 300.0 };
-        let current_dpi = current_dpi_w.max(current_dpi_h);
-
-        let mut processed_img = img;
-        let mut resized = false;
-
-        // 解像度が閾値を超えていればリサイズ
-        if active_config.downsample != "off" && current_dpi > threshold_dpi as f32 {
-            let target_w = (est_w_in * target_dpi as f32).round() as u32;
-            let target_h = (est_h_in * target_dpi as f32).round() as u32;
-            
-            // アスペクト比を維持しつつ縮小
-            if target_w < width && target_h < height {
-                processed_img = image_util::resize_image(&processed_img, target_w, target_h, &active_config.downsample);
-                resized = true;
+                if let Some(dp) = encoded.decode_parms {
+                    stream.dict.set("DecodeParms", Object::Dictionary(dp));
+                } else {
+                    stream.dict.remove(b"DecodeParms");
+                }
+                stream.content = encoded.data;
             }
-        }
 
-        // off が指定され、かつリサイズもされていない場合は元のストリームを維持する
-        if active_config.format == "off" && !resized {
-            continue;
-        }
-
-        // フォーマットと色の変換・保存
-        let mut new_stream = stream_obj.clone();
-        let new_data: Vec<u8>;
-        let format_lower = active_config.format.to_lowercase();
-
-        if mode == "mono" {
-            // モノクロ二値化
-            let gray = processed_img.to_luma8();
-            let mono_method = active_config.mono_method.as_deref().unwrap_or("threshold");
-            let binarized = if mono_method == "dither" {
-                image_util::apply_floyd_steinberg(&gray)
-            } else {
-                image_util::apply_otsu(&gray)
-            };
-
-            if format_lower == "zip" || format_lower == "lzw" {
-                // ロスレス圧縮 (FlateDecode)
-                let packed_bytes = image_util::pack_mono_image(&binarized);
-                if let Ok(deflated) = image_util::compress_deflate(&packed_bytes) {
-                    new_data = deflated;
-                    new_stream.dict.set("Width", binarized.width() as i64);
-                    new_stream.dict.set("Height", binarized.height() as i64);
-                    new_stream.dict.set("ColorSpace", Object::Name(b"DeviceGray".to_vec()));
-                    new_stream.dict.set("BitsPerComponent", 1);
-                    new_stream.dict.set("Filter", Object::Name(b"FlateDecode".to_vec()));
-                    new_stream.dict.remove(b"DecodeParms");
-                } else {
-                    continue;
-                }
-            } else {
-                // CCITT Group 4 エンコード (デフォルトおよび off/ccitt 指定時のフォールバック)
-                if let Ok(g4_data) = image_util::encode_g4(&binarized) {
-                    new_data = g4_data;
-                    new_stream.dict.set("Width", binarized.width() as i64);
-                    new_stream.dict.set("Height", binarized.height() as i64);
-                    new_stream.dict.set("ColorSpace", Object::Name(b"DeviceGray".to_vec()));
-                    new_stream.dict.set("BitsPerComponent", 1);
-                    new_stream.dict.set("Filter", Object::Name(b"CCITTFaxDecode".to_vec()));
-                    
-                    let mut decode_parms = Dictionary::new();
-                    decode_parms.set("Columns", binarized.width() as i64);
-                    decode_parms.set("Rows", binarized.height() as i64);
-                    decode_parms.set("K", -1);
-                    new_stream.dict.set("DecodeParms", Object::Dictionary(decode_parms));
-                } else {
-                    continue; // G4エンコード失敗時はスキップ
-                }
-            }
-        } else if mode == "gray" {
-            // グレースケール化
-            let gray = processed_img.to_luma8();
-            if format_lower == "zip" || format_lower == "lzw" {
-                // ロスレス圧縮 (FlateDecode)
-                let raw_pixels = gray.as_raw();
-                if let Ok(deflated) = image_util::compress_deflate(raw_pixels) {
-                    new_data = deflated;
-                    new_stream.dict.set("Width", gray.width() as i64);
-                    new_stream.dict.set("Height", gray.height() as i64);
-                    new_stream.dict.set("ColorSpace", Object::Name(b"DeviceGray".to_vec()));
-                    new_stream.dict.set("BitsPerComponent", 8);
-                    new_stream.dict.set("Filter", Object::Name(b"FlateDecode".to_vec()));
-                    new_stream.dict.remove(b"DecodeParms");
-                } else {
-                    continue;
-                }
-            } else {
-                // JPEG圧縮
-                if let Ok(jpeg_data) = image_util::encode_jpeg_luma(&gray, active_config.quality) {
-                    new_data = jpeg_data;
-                    new_stream.dict.set("Width", gray.width() as i64);
-                    new_stream.dict.set("Height", gray.height() as i64);
-                    new_stream.dict.set("ColorSpace", Object::Name(b"DeviceGray".to_vec()));
-                    new_stream.dict.set("BitsPerComponent", 8);
-                    new_stream.dict.set("Filter", Object::Name(b"DCTDecode".to_vec()));
-                    new_stream.dict.remove(b"DecodeParms");
-                } else {
-                    continue;
-                }
-            }
-        } else {
-            // カラー
-            if format_lower == "zip" || format_lower == "lzw" {
-                // ロスレス圧縮 (FlateDecode)
-                let rgb = processed_img.to_rgb8();
-                let raw_pixels = rgb.as_raw();
-                if let Ok(deflated) = image_util::compress_deflate(raw_pixels) {
-                    new_data = deflated;
-                    new_stream.dict.set("Width", rgb.width() as i64);
-                    new_stream.dict.set("Height", rgb.height() as i64);
-                    new_stream.dict.set("ColorSpace", Object::Name(b"DeviceRGB".to_vec()));
-                    new_stream.dict.set("BitsPerComponent", 8);
-                    new_stream.dict.set("Filter", Object::Name(b"FlateDecode".to_vec()));
-                    new_stream.dict.remove(b"DecodeParms");
-                } else {
-                    continue;
-                }
-            } else {
-                // JPEG圧縮
-                if let Ok(jpeg_data) = image_util::encode_jpeg_rgb(&processed_img, active_config.quality) {
-                    new_data = jpeg_data;
-                    new_stream.dict.set("Width", processed_img.width() as i64);
-                    new_stream.dict.set("Height", processed_img.height() as i64);
-                    new_stream.dict.set("ColorSpace", Object::Name(b"DeviceRGB".to_vec()));
-                    new_stream.dict.set("BitsPerComponent", 8);
-                    new_stream.dict.set("Filter", Object::Name(b"DCTDecode".to_vec()));
-                    new_stream.dict.remove(b"DecodeParms");
-                } else {
-                    continue;
+            if let (Some(smask_ref), Some((w, h, data))) = (res.smask_ref, res.smask_data) {
+                if let Ok(Object::Stream(ref mut smask_stream)) = doc.get_object_mut(smask_ref) {
+                    smask_stream.dict.set("Width", w as i64);
+                    smask_stream.dict.set("Height", h as i64);
+                    smask_stream.dict.set("Filter", Object::Name(b"FlateDecode".to_vec()));
+                    smask_stream.content = data;
                 }
             }
         }
-
-        // ストリームのデータを更新
-        new_stream.content = new_data;
-        doc.set_object(img_id, Object::Stream(new_stream));
     }
 
     // 3. 破棄＆クリーンアップ処理
@@ -452,13 +458,26 @@ pub fn optimize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
         .map_err(|e| format!("Failed to write optimized PDF: {:?}", e))?;
 
     // ファイルサイズの比較
-    let orig_size = std::fs::metadata(&input_path).map(|m| m.len()).unwrap_or(0);
     let opt_size = std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
+
+    // インメモリ監査（保存済み Document オブジェクトから直接計算）
+    let opt_audit = Some(audit_document(&doc, file_name, opt_size));
 
     // 完了を通知
     progress_callback(total_pages + total_images, total_pages + total_images);
 
-    Ok((orig_size, opt_size))
+    Ok((orig_size, opt_size, orig_audit, opt_audit))
+}
+
+/// 従来のシグネチャを維持する最適化メイン関数
+pub fn optimize_pdf<P: AsRef<Path>, Q: AsRef<Path>>(
+    input_path: P,
+    output_path: Q,
+    config: &OptimizeConfig,
+    progress_callback: impl Fn(usize, usize) + Send + Sync + 'static,
+) -> Result<(u64, u64), String> {
+    optimize_pdf_with_audit(input_path, output_path, config, progress_callback)
+        .map(|(orig, opt, _, _)| (orig, opt))
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -602,4 +621,142 @@ fn load_raw_pdf_image(
 
     None
 }
+
+/// ページの Contents から生バイト列を取得する
+fn get_page_content_bytes(doc: &Document, page_dict: &Dictionary) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    if let Ok(contents) = page_dict.get(b"Contents") {
+        match contents {
+            Object::Reference(id) => {
+                if let Ok(Object::Stream(s)) = doc.get_object(*id) {
+                    if let Ok(decomp) = s.decompressed_content() {
+                        bytes.extend(decomp);
+                    } else {
+                        bytes.extend(&s.content);
+                    }
+                }
+            }
+            Object::Array(arr) => {
+                for item in arr {
+                    if let Ok(id) = item.as_reference() {
+                        if let Ok(Object::Stream(s)) = doc.get_object(id) {
+                            if let Ok(decomp) = s.decompressed_content() {
+                                bytes.extend(decomp);
+                            } else {
+                                bytes.extend(&s.content);
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    bytes
+}
+
+/// コンテンツストリームを簡易解析し、`cm`（変換行列）と `/Name Do` から画像の描画サイズ (pt) を抽出
+fn extract_image_ctm_sizes(content: &[u8], map: &mut HashMap<String, (f32, f32)>) {
+    let text = String::from_utf8_lossy(content);
+    let mut current_matrix = [1.0f32, 0.0, 0.0, 1.0f32]; // [a, b, c, d]
+    let mut matrix_stack = Vec::new();
+
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed == "q" {
+            matrix_stack.push(current_matrix);
+        } else if trimmed == "Q" {
+            if let Some(m) = matrix_stack.pop() {
+                current_matrix = m;
+            }
+        } else if trimmed.ends_with(" cm") {
+            let tokens: Vec<&str> = trimmed.split_whitespace().collect();
+            if tokens.len() >= 7 {
+                if let (Ok(a), Ok(b), Ok(c), Ok(d)) = (
+                    tokens[0].parse::<f32>(),
+                    tokens[1].parse::<f32>(),
+                    tokens[2].parse::<f32>(),
+                    tokens[3].parse::<f32>(),
+                ) {
+                    current_matrix = [a.abs(), b.abs(), c.abs(), d.abs()];
+                }
+            }
+        } else if trimmed.ends_with(" Do") {
+            let tokens: Vec<&str> = trimmed.split_whitespace().collect();
+            if tokens.len() >= 2 {
+                let name = tokens[0].trim_start_matches('/');
+                let width_pt = (current_matrix[0] * current_matrix[0] + current_matrix[1] * current_matrix[1]).sqrt();
+                let height_pt = (current_matrix[2] * current_matrix[2] + current_matrix[3] * current_matrix[3]).sqrt();
+                if width_pt > 0.0 && height_pt > 0.0 {
+                    let entry = map.entry(name.to_string()).or_insert((0.0, 0.0));
+                    entry.0 = entry.0.max(width_pt);
+                    entry.1 = entry.1.max(height_pt);
+                }
+            }
+        }
+    }
+}
+
+/// 辞書からリソース内の XObject を再帰走査（Form XObject も対応）
+fn scan_xobjects_recursive(
+    doc: &Document,
+    parent_dict: &Dictionary,
+    fallback_size: (f32, f32),
+    ctm_map: &HashMap<String, (f32, f32)>,
+    image_sizes: &mut HashMap<ObjectId, (f32, f32)>,
+    visited_forms: &mut HashSet<ObjectId>,
+) {
+    let resources = match parent_dict.get(b"Resources") {
+        Ok(Object::Reference(id)) => doc.get_object(*id).ok().and_then(|obj| obj.as_dict().ok()),
+        Ok(Object::Dictionary(d)) => Some(d),
+        _ => None,
+    };
+
+    let resources_dict = match resources {
+        Some(d) => d,
+        None => return,
+    };
+
+    let xobjects = match resources_dict.get(b"XObject") {
+        Ok(Object::Reference(id)) => doc.get_object(*id).ok().and_then(|obj| obj.as_dict().ok()),
+        Ok(Object::Dictionary(d)) => Some(d),
+        _ => None,
+    };
+
+    let xobjects_dict = match xobjects {
+        Some(d) => d,
+        None => return,
+    };
+
+    for (name_bytes, xobj_ref) in xobjects_dict.iter() {
+        if let Ok(xobj_id) = xobj_ref.as_reference() {
+            if let Ok(xobj_stream) = doc.get_object(xobj_id).and_then(|obj| obj.as_stream()) {
+                if let Ok(Object::Name(ref subtype)) = xobj_stream.dict.get(b"Subtype") {
+                    if subtype == b"Image" {
+                        let name_str = String::from_utf8_lossy(name_bytes).to_string();
+                        let size = if let Some(&(w, h)) = ctm_map.get(&name_str) {
+                            (w, h)
+                        } else {
+                            fallback_size
+                        };
+                        let entry = image_sizes.entry(xobj_id).or_insert((0.0, 0.0));
+                        entry.0 = entry.0.max(size.0);
+                        entry.1 = entry.1.max(size.1);
+                    } else if subtype == b"Form" && !visited_forms.contains(&xobj_id) {
+                        visited_forms.insert(xobj_id);
+                        scan_xobjects_recursive(
+                            doc,
+                            &xobj_stream.dict,
+                            fallback_size,
+                            ctm_map,
+                            image_sizes,
+                            visited_forms,
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 

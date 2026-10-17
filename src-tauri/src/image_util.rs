@@ -193,3 +193,99 @@ pub fn pack_mono_image(img: &ImageBuffer<Luma<u8>, Vec<u8>>) -> Vec<u8> {
     packed
 }
 
+#[derive(Debug, Clone)]
+pub struct EncodedPdfImage {
+    pub data: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
+    pub color_space: Vec<u8>,
+    pub bits_per_component: i64,
+    pub filter: Vec<u8>,
+    pub decode_parms: Option<lopdf::Dictionary>,
+}
+
+/// DynamicImage を指定のモード (color/gray/mono) と ImageConfig に従ってエンコードし、PDF画像ストリームに必要なメタデータを返す
+pub fn encode_image_stream(
+    img: &DynamicImage,
+    mode: &str,
+    active_config: &crate::optimizer::ImageConfig,
+) -> Result<EncodedPdfImage, String> {
+    use lopdf::Dictionary;
+
+    let format_lower = active_config.format.to_lowercase();
+    let width: u32;
+    let height: u32;
+    let data: Vec<u8>;
+    let filter: Vec<u8>;
+    let color_space: Vec<u8>;
+    let bits_per_component: i64;
+    let mut decode_parms = None;
+
+    if mode == "mono" {
+        let gray = img.to_luma8();
+        let mono_method = active_config.mono_method.as_deref().unwrap_or("threshold");
+        let binarized = if mono_method == "dither" {
+            apply_floyd_steinberg(&gray)
+        } else {
+            apply_otsu(&gray)
+        };
+        width = binarized.width();
+        height = binarized.height();
+        color_space = b"DeviceGray".to_vec();
+        bits_per_component = 1;
+
+        if format_lower == "zip" || format_lower == "lzw" {
+            let packed = pack_mono_image(&binarized);
+            data = compress_deflate(&packed)?;
+            filter = b"FlateDecode".to_vec();
+        } else {
+            data = encode_g4(&binarized)?;
+            filter = b"CCITTFaxDecode".to_vec();
+            let mut dp = Dictionary::new();
+            dp.set("Columns", width as i64);
+            dp.set("Rows", height as i64);
+            dp.set("K", -1);
+            decode_parms = Some(dp);
+        }
+    } else if mode == "gray" {
+        let gray = img.to_luma8();
+        width = gray.width();
+        height = gray.height();
+        color_space = b"DeviceGray".to_vec();
+        bits_per_component = 8;
+
+        if format_lower == "zip" || format_lower == "lzw" {
+            data = compress_deflate(gray.as_raw())?;
+            filter = b"FlateDecode".to_vec();
+        } else {
+            data = encode_jpeg_luma(&gray, active_config.quality)?;
+            filter = b"DCTDecode".to_vec();
+        }
+    } else {
+        width = img.width();
+        height = img.height();
+        color_space = b"DeviceRGB".to_vec();
+        bits_per_component = 8;
+
+        if format_lower == "zip" || format_lower == "lzw" {
+            let rgb = img.to_rgb8();
+            data = compress_deflate(rgb.as_raw())?;
+            filter = b"FlateDecode".to_vec();
+        } else {
+            data = encode_jpeg_rgb(img, active_config.quality)?;
+            filter = b"DCTDecode".to_vec();
+        }
+    }
+
+    Ok(EncodedPdfImage {
+        data,
+        width,
+        height,
+        color_space,
+        bits_per_component,
+        filter,
+        decode_parms,
+    })
+}
+
+

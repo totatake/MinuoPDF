@@ -30,9 +30,9 @@
 
 .. test:: PDF Audit 容量構造解析単体検証 (PDF Audit Analysis Verification)
    :id: TEST_UNIT_004
-   :links: DES_BE_001
+   :links: DES_BE_AUDIT, REQ_AUDIT_001
 
-   - **容量割合計算**: PDF オブジェクト（画像、ストリーム、注釈等）の容量算出およびパーセンテージ計算ロジックを単体検証する (``test_audit_category_percentage``, ``test_audit_user_pdfs``)。
+   - **容量割合計算**: PDF オブジェクト（画像、ストリーム、注釈等）の容量算出およびパーセンテージ計算ロジックを単体検証する (``test_audit_category_percentage``, ``test_audit_user_pdfs_classification``)。
 
 結合テスト仕様 (Integration Verification)
 =========================================
@@ -47,7 +47,7 @@
    :id: TEST_INT_002
    :links: ARCH_BE_RAST, REQ_OPT_004
 
-   - **完全ラスタライズモード**: ``pdfium.dll`` を介した高精細ページレンダリングおよび画像PDF生成処理の結合正常性を検証する。
+   - **完全ラスタライズモード**: ``pdfium-render`` を介した高精細ページレンダリングおよび画像PDF生成処理の結合正常性を検証する。
 
 .. test:: フォント埋め込み解除 & オブジェクト破棄結合検証 (Font Unembed & Discard Integration)
    :id: TEST_INT_003
@@ -59,7 +59,19 @@
    :id: TEST_INT_004
    :links: ARCH_IPC_001, REQ_GUI_004, REQ_GUI_005
 
-   - **双方向連携**: Tauri ``invoke`` メッセージ受動処理および進捗率（0-100%）・リアルタイムログ配信のIPC統合を検証する。
+   - **双方向連携**: Tauri ``invoke`` メッセージ受動処理および進捗率（0-100%）・リアルタイムログ配信・インメモリ監査比較のIPC統合を検証する。
+
+.. test:: 非対話バッチCLI実行結合検証 (Non-interactive Batch CLI Integration)
+   :id: TEST_INT_005
+   :links: ARCH_BE_CLI, REQ_CLI_002, DES_BE_CLI
+
+   - **ヘッドレス自動化**: ``--output``, ``--preset``, ``--profile``, ``--strategy`` を指定したコマンドライン実行において、プロンプト停止することなく最適化が正常完了することを検証する。
+
+.. test:: CTM実効DPI算出・Form XObject走査・SMask連動・Smart Fallback結合検証 (Smart Optimization Integration)
+   :id: TEST_INT_006
+   :links: ARCH_BE_OPT, REQ_OPT_007, REQ_OPT_008, REQ_PERF_001, DES_BE_001
+
+   - **スマート最適化精度**: CTMオペレータからのDPI推定、Form XObject内画像の再帰検出、透過SMaskの追従リサイズ、無変換画像の逆圧縮防止（Smart Fallback）、およびRayon並列画像処理の結合動作を検証する。
 
 適格性テスト仕様 (Qualification Testing)
 ========================================
@@ -123,6 +135,12 @@ E2E GUI 自動テスト仕様 (Playwright GUI Automation)
    :links: REQ_GUI_004, REQ_GUI_005
 
    - **進捗・ステータスバー・ログ**: リアルタイム進捗率表示（0-100%）、プログレスバー、一括最適化開始ボタン、および実行コンソールログエリアのレイアウトと可視性を検証する。
+
+.. test:: E2E GUI PDF Audit 容量内訳モーダル検証 (Playwright PDF Audit Modal Verification)
+   :id: TEST_GUI_006
+   :links: REQ_AUDIT_001, DES_GUI_003
+
+   - **Audit モーダル**: 最適化ログまたはファイル一覧からの Audit ボタンクリックによるモーダルオープン、棒グラフおよび比較テーブル（Images, Fonts, Content Streams 等）のレンダリングを検証する。
 
 
 

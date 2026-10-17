@@ -2597,6 +2597,7 @@ dependencies = [
  "image",
  "lopdf",
  "pdfium-render",
+ "rayon",
  "serde",
  "serde_json",
  "tauri",

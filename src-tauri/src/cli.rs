@@ -247,3 +247,72 @@ pub fn run_cli(input_path_str: &str) {
 
     wait_exit();
 }
+
+/// 非対話（バッチ・スクリプト・CI用）CLI実行ルーチン
+pub fn run_batch_cli(
+    input_path_str: &str,
+    output_path_opt: Option<&str>,
+    preset_opt: Option<&str>,
+    profile_opt: Option<&str>,
+    strategy_opt: Option<&str>,
+) -> Result<(), String> {
+    let input_path = crate::normalize_pdf_path(input_path_str);
+    if !input_path.exists() {
+        return Err(format!("Input file does not exist: {}", input_path_str));
+    }
+
+    let mut config = if let Some(profile_name) = profile_opt {
+        let profiles = crate::profile::load_all_profiles();
+        profiles
+            .get(profile_name)
+            .cloned()
+            .ok_or_else(|| format!("Profile '{}' not found in profiles/ directory", profile_name))?
+    } else if let Some(preset_name) = preset_opt {
+        crate::profile::get_preset_config(preset_name)
+    } else {
+        crate::profile::get_default_config()
+    };
+
+    let use_rasterize = if let Some(strat) = strategy_opt {
+        strat.to_lowercase() == "rasterize"
+    } else {
+        config.force_rasterize
+    };
+    config.force_rasterize = use_rasterize;
+
+    let output_path = if let Some(out_str) = output_path_opt {
+        crate::normalize_pdf_path(out_str)
+    } else {
+        let ext = input_path.extension().and_then(|s| s.to_str()).unwrap_or("pdf");
+        let stem = input_path.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
+        let out_dir = input_path.parent().unwrap_or_else(|| Path::new("."));
+        out_dir.join(format!("{}_optimized.{}", stem, ext))
+    };
+
+    println!("Optimizing '{}' -> '{}'...", input_path.display(), output_path.display());
+    let progress_cb = |current, total| {
+        print_progress_bar(current, total);
+    };
+
+    let result = if use_rasterize {
+        rasterize_pdf(&input_path, &output_path, &config, progress_cb)
+    } else {
+        optimize_pdf(&input_path, &output_path, &config, progress_cb)
+    };
+
+    println!();
+    match result {
+        Ok((orig, opt)) => {
+            let savings = if orig > 0 { (1.0 - (opt as f64 / orig as f64)) * 100.0 } else { 0.0 };
+            println!(
+                "Success: {} bytes ({:.2} MB) -> {} bytes ({:.2} MB) [-{:.1}%]",
+                orig, orig as f64 / 1024.0 / 1024.0,
+                opt, opt as f64 / 1024.0 / 1024.0,
+                savings
+            );
+            Ok(())
+        }
+        Err(e) => Err(format!("Optimization failed: {}", e)),
+    }
+}
+

@@ -40,7 +40,11 @@ pub fn audit_pdf<P: AsRef<Path>>(path: P) -> Result<PdfAuditReport, String> {
         .map_err(|e| format!("Failed to get file metadata: {:?}", e))?;
 
     let doc = Document::load(path_ref).map_err(|e| format!("Failed to load PDF for audit: {:?}", e))?;
+    Ok(audit_document(&doc, file_name, total_bytes))
+}
 
+/// インメモリの Document 参照から直接容量内訳を計算する（ディスク再読み込み不要）
+pub fn audit_document(doc: &Document, file_name: String, total_bytes: u64) -> PdfAuditReport {
     let mut content_stream_ids: HashSet<ObjectId> = HashSet::new();
     let mut font_related_ids: HashSet<ObjectId> = HashSet::new();
 
@@ -242,11 +246,11 @@ pub fn audit_pdf<P: AsRef<Path>>(path: P) -> Result<PdfAuditReport, String> {
         },
     ];
 
-    Ok(PdfAuditReport {
+    PdfAuditReport {
         file_name,
         total_bytes,
         categories,
-    })
+    }
 }
 
 /// オブジェクトのバイト数を推定計算するヘルパー
