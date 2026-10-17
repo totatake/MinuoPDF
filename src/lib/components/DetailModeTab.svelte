@@ -69,6 +69,7 @@
                   <option value="150">150</option>
                   <option value="200">200</option>
                   <option value="300">300</option>
+                  <option value="450">450</option>
                 </select>
               </div>
               <span class="tooltip-text">{t.tooltipDpi}</span>
@@ -131,6 +132,7 @@
                   <option value="150">150</option>
                   <option value="200">200</option>
                   <option value="300">300</option>
+                  <option value="450">450</option>
                 </select>
               </div>
               <span class="tooltip-text">{t.tooltipDpi}</span>
@@ -193,6 +195,7 @@
                   <option value="150">150</option>
                   <option value="200">200</option>
                   <option value="300">300</option>
+                  <option value="450">450</option>
                 </select>
               </div>
               <span class="tooltip-text">{t.tooltipDpi}</span>
