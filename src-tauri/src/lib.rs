@@ -109,11 +109,18 @@ pub fn get_fixture_path(filename: &str) -> PathBuf {
         };
 
         if script_path.exists() {
-            let _ = std::process::Command::new("python")
+            let py_status = std::process::Command::new("python3")
                 .arg(&script_path)
                 .arg("--file")
                 .arg(filename_only)
                 .status();
+            if py_status.is_err() {
+                let _ = std::process::Command::new("python")
+                    .arg(&script_path)
+                    .arg("--file")
+                    .arg(filename_only)
+                    .status();
+            }
         }
     }
 
@@ -153,7 +160,9 @@ async fn scan_fonts_cmd(input_paths: Vec<String>) -> Result<Vec<String>, String>
         if path.exists() {
             if let Ok(fonts) = optimizer::scan_pdf_fonts(&path) {
                 for font in fonts {
-                    all_fonts.insert(font.name);
+                    if font.is_embedded {
+                        all_fonts.insert(font.name);
+                    }
                 }
             }
         }

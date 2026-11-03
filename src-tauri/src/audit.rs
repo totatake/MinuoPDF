@@ -179,9 +179,12 @@ pub fn audit_document(doc: &Document, file_name: String, total_bytes: u64) -> Pd
         overhead_bytes += total_bytes - accounted_bytes;
     }
 
+    // 推定値の合計が実ファイルサイズを超える場合は、合計値を基準に正規化して100%超過を防ぐ
+    let effective_total = total_bytes.max(img_bytes + content_bytes + font_bytes + annot_bytes + form_bytes + meta_bytes + overhead_bytes);
+
     let calc_pct = |b: u64| -> f64 {
-        if total_bytes > 0 {
-            (b as f64 / total_bytes as f64) * 100.0
+        if effective_total > 0 {
+            (b as f64 / effective_total as f64) * 100.0
         } else {
             0.0
         }

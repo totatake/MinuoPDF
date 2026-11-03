@@ -73,6 +73,8 @@ pub fn subset_pdf_fonts(doc: &mut Document) -> usize {
 
             // Find all CIDFonts referencing any FontDescriptor for this stream
             let mut referencing_cidfonts = Vec::new();
+            let mut has_unsupported_cid_map = false;
+
             for (&obj_id, obj) in doc.objects.iter() {
                 if let Ok(dict) = obj.as_dict() {
                     let is_cidfont = dict.get(b"Subtype")
@@ -82,11 +84,26 @@ pub fn subset_pdf_fonts(doc: &mut Document) -> usize {
                     if is_cidfont {
                         if let Ok(fd_ref) = dict.get(b"FontDescriptor").and_then(|o| o.as_reference()) {
                             if desc_ids_for_stream.contains(&fd_ref) {
+                                // 既存の CIDToGIDMap がストリーム参照（カスタムマッピング）の場合、
+                                // Identity-H を前提としたサブセット化でグリフ化けが生じるためスキップ
+                                if let Ok(cid_map_obj) = dict.get(b"CIDToGIDMap") {
+                                    if let Ok(name) = cid_map_obj.as_name_str() {
+                                        if name != "Identity" {
+                                            has_unsupported_cid_map = true;
+                                        }
+                                    } else if cid_map_obj.as_reference().is_ok() {
+                                        has_unsupported_cid_map = true;
+                                    }
+                                }
                                 referencing_cidfonts.push(obj_id);
                             }
                         }
                     }
                 }
+            }
+
+            if has_unsupported_cid_map {
+                continue;
             }
 
             if process_font_stream(doc, stream_id, font_key, &all_gids, &referencing_cidfonts) {
@@ -154,6 +171,29 @@ fn get_content_streams(doc: &Document, contents_obj: &Object) -> Vec<Vec<u8>> {
 /// Identity-H エンコーディングの CIDFont では、<hex> 文字列の各2バイトが GID に直結する。
 /// 通常のフォントでは (...) 文字列の各バイトが文字コードとなる。
 fn extract_gids_from_stream(data: &[u8], gids: &mut HashSet<u16>) {
+    // 1. lopdf Content::decode による精密なオペランド解析
+    if let Ok(content_ops) = lopdf::content::Content::decode(data) {
+        for op in content_ops.operations {
+            let op_name = op.operator.as_str();
+            if op_name == "Tj" || op_name == "'" || op_name == "\"" {
+                for operand in &op.operands {
+                    extract_gids_from_object(operand, gids);
+                }
+            } else if op_name == "TJ" {
+                for operand in &op.operands {
+                    if let Object::Array(arr) = operand {
+                        for item in arr {
+                            extract_gids_from_object(item, gids);
+                        }
+                    } else {
+                        extract_gids_from_object(operand, gids);
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. 行ベースの正規表現/文字列解析（フォールバック）
     let text = String::from_utf8_lossy(data);
     for line in text.lines() {
         let trimmed = line.trim();
@@ -169,6 +209,29 @@ fn extract_gids_from_stream(data: &[u8], gids: &mut HashSet<u16>) {
 
         // (...) 文字列の解析: 各バイトを GID 候補として収集
         extract_paren_gids(trimmed, gids);
+    }
+}
+
+fn extract_gids_from_object(obj: &Object, gids: &mut HashSet<u16>) {
+    match obj {
+        Object::String(bytes, _) => {
+            // 2バイトペア (Identity-H CID)
+            let mut k = 0;
+            while k + 1 < bytes.len() {
+                let gid = ((bytes[k] as u16) << 8) | (bytes[k + 1] as u16);
+                if gid > 0 {
+                    gids.insert(gid);
+                }
+                k += 2;
+            }
+            // 単バイト
+            for &b in bytes {
+                if b > 0 {
+                    gids.insert(b as u16);
+                }
+            }
+        }
+        _ => {}
     }
 }
 

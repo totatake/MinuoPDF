@@ -655,8 +655,60 @@ fn get_page_content_bytes(doc: &Document, page_dict: &Dictionary) -> Vec<u8> {
     bytes
 }
 
-/// コンテンツストリームを簡易解析し、`cm`（変換行列）と `/Name Do` から画像の描画サイズ (pt) を抽出
+/// コンテンツストリームを解析し、`cm`（変換行列）と `/Name Do` から画像の描画サイズ (pt) を抽出
 fn extract_image_ctm_sizes(content: &[u8], map: &mut HashMap<String, (f32, f32)>) {
+    if let Ok(content_ops) = lopdf::content::Content::decode(content) {
+        let mut current_matrix = [1.0f32, 0.0, 0.0, 1.0f32]; // [a, b, c, d]
+        let mut matrix_stack = Vec::new();
+
+        for op in content_ops.operations {
+            match op.operator.as_str() {
+                "q" => {
+                    matrix_stack.push(current_matrix);
+                }
+                "Q" => {
+                    if let Some(m) = matrix_stack.pop() {
+                        current_matrix = m;
+                    }
+                }
+                "cm" => {
+                    if op.operands.len() >= 6 {
+                        if let (Some(a), Some(b), Some(c), Some(d)) = (
+                            op.operands[0].as_float().ok(),
+                            op.operands[1].as_float().ok(),
+                            op.operands[2].as_float().ok(),
+                            op.operands[3].as_float().ok(),
+                        ) {
+                            current_matrix = [a.abs(), b.abs(), c.abs(), d.abs()];
+                        }
+                    }
+                }
+                "Do" => {
+                    if let Some(name_obj) = op.operands.first() {
+                        let name_str = match name_obj {
+                            Object::Name(bytes) => String::from_utf8_lossy(bytes).to_string(),
+                            Object::String(bytes, _) => String::from_utf8_lossy(bytes).to_string(),
+                            _ => String::new(),
+                        };
+                        let name = name_str.trim_start_matches('/');
+                        if !name.is_empty() {
+                            let width_pt = (current_matrix[0] * current_matrix[0] + current_matrix[1] * current_matrix[1]).sqrt();
+                            let height_pt = (current_matrix[2] * current_matrix[2] + current_matrix[3] * current_matrix[3]).sqrt();
+                            if width_pt > 0.0 && height_pt > 0.0 {
+                                let entry = map.entry(name.to_string()).or_insert((0.0, 0.0));
+                                entry.0 = entry.0.max(width_pt);
+                                entry.1 = entry.1.max(height_pt);
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        return;
+    }
+
+    // フォールバック: lopdfのパースに失敗した場合の行ベース簡易解析
     let text = String::from_utf8_lossy(content);
     let mut current_matrix = [1.0f32, 0.0, 0.0, 1.0f32]; // [a, b, c, d]
     let mut matrix_stack = Vec::new();
