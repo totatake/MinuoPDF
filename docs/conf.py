@@ -6,7 +6,7 @@ import sys
 project = 'MinuoPDF'
 copyright = '2026, MinuoPDF Contributors'
 author = 'MinuoPDF Contributors'
-release = '0.2.0'
+release = '0.2.1'
 
 # -- General configuration ---------------------------------------------------
 extensions = [
