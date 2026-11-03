@@ -29,78 +29,132 @@ fn hide_console() {
 #[cfg(not(target_os = "windows"))]
 fn hide_console() {}
 
+fn print_help() {
+    println!("MinuoPDF - Non-GPL / Lightweight PDF Optimization Tool");
+    println!("MinuoPDF - 非GPL / 軽量PDF最適化ツール");
+    println!("\nUsage:");
+    println!("  MinuoPDF                       (GUI Mode)");
+    println!("  MinuoPDF <input.pdf>           (Interactive CUI Mode / D&D)");
+    println!("  MinuoPDF <input.pdf...> [opts] (Non-interactive Batch Mode)");
+    println!("\nOptions:");
+    println!("  -o, --output <FILE|DIR>        Output PDF file path (or dir for multiple inputs)");
+    println!("  -p, --preset <PRESET>          Preset: high_quality | standard | low_quality | light | mono | rasterize");
+    println!("  --profile <NAME>               Saved JSON profile name in profiles/");
+    println!("  -s, --strategy <STRATEGY>      Strategy: text | keep-text | rasterize");
+    println!("  -b, --batch [DIR]              Force batch mode (optional output directory)");
+    println!("  -h, --help                     Print this help message");
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
-        let first_arg = &args[1];
-        if first_arg == "--help" || first_arg == "-h" || first_arg == "help" {
-            println!("MinuoPDF - Non-GPL / Lightweight PDF Optimization Tool");
-            println!("MinuoPDF - 非GPL / 軽量PDF最適化ツール");
-            println!("\nUsage:");
-            println!("  MinuoPDF                    (GUI Mode)");
-            println!("  MinuoPDF <input.pdf>        (Interactive CUI Mode / D&D)");
-            println!("  MinuoPDF <input.pdf> [options] (Non-interactive Batch Mode)");
-            println!("\nOptions:");
-            println!("  -o, --output <FILE>         Output PDF file path");
-            println!("  -p, --preset <PRESET>       Preset: high_quality | standard | low_quality | mono | rasterize");
-            println!("  --profile <NAME>            Saved JSON profile name in profiles/");
-            println!("  -s, --strategy <STRATEGY>   Strategy: text | rasterize");
-            println!("  -b, --batch                 Run non-interactively with default/specified settings");
-            println!("  -h, --help                  Print this help message");
+        // Any occurrence of -h / --help prints help and exits
+        if args.iter().skip(1).any(|a| a == "--help" || a == "-h" || a == "help") {
+            print_help();
             return;
         }
 
-        // 引数が1つだけ（PDFファイルのD&DまたはCLI起動）の場合は従来の対話モードを維持
-        if args.len() == 2 && !first_arg.starts_with('-') {
-            minuopdf_lib::cli::run_cli(first_arg);
-            return;
-        }
-
-        // 複数引数（フラグ指定）の場合は非対話バッチモードで実行
-        let mut input_path = None;
+        let mut input_paths: Vec<String> = Vec::new();
         let mut output_path = None;
         let mut preset = None;
         let mut profile = None;
         let mut strategy = None;
+        let mut force_batch = false;
 
         let mut i = 1;
         while i < args.len() {
             match args[i].as_str() {
                 "-o" | "--output" => {
-                    if i + 1 < args.len() { output_path = Some(args[i + 1].clone()); i += 1; }
+                    if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                        output_path = Some(args[i + 1].clone());
+                        i += 1;
+                    }
                 }
                 "-p" | "--preset" => {
-                    if i + 1 < args.len() { preset = Some(args[i + 1].clone()); i += 1; }
+                    if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                        preset = Some(args[i + 1].clone());
+                        i += 1;
+                    }
                 }
                 "--profile" => {
-                    if i + 1 < args.len() { profile = Some(args[i + 1].clone()); i += 1; }
+                    if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                        profile = Some(args[i + 1].clone());
+                        i += 1;
+                    }
                 }
                 "-s" | "--strategy" => {
-                    if i + 1 < args.len() { strategy = Some(args[i + 1].clone()); i += 1; }
+                    if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                        strategy = Some(args[i + 1].clone());
+                        i += 1;
+                    }
                 }
-                "-b" | "--batch" => {}
+                "-b" | "--batch" => {
+                    force_batch = true;
+                    if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                        // Optional directory argument for -b
+                        output_path = Some(args[i + 1].clone());
+                        i += 1;
+                    }
+                }
                 other => {
-                    if !other.starts_with('-') && input_path.is_none() {
-                        input_path = Some(other.to_string());
+                    if !other.starts_with('-') {
+                        input_paths.push(other.to_string());
                     }
                 }
             }
             i += 1;
         }
 
-        if let Some(ref in_file) = input_path {
+        if input_paths.is_empty() {
+            eprintln!("Error: Missing input PDF file. Use --help for usage.");
+            std::process::exit(1);
+        }
+
+        // Single file without batch flag and without options -> Interactive CLI
+        if input_paths.len() == 1
+            && !force_batch
+            && output_path.is_none()
+            && preset.is_none()
+            && profile.is_none()
+            && strategy.is_none()
+        {
+            minuopdf_lib::cli::run_cli(&input_paths[0]);
+            return;
+        }
+
+        // Batch execution (single or multiple files)
+        let is_multi = input_paths.len() > 1;
+        let mut has_err = false;
+
+        for in_file in &input_paths {
+            let target_out = if let Some(ref out_base) = output_path {
+                let out_p = std::path::Path::new(out_base);
+                if is_multi || out_p.is_dir() || out_base.ends_with('/') || out_base.ends_with('\\') {
+                    let in_p = std::path::Path::new(in_file);
+                    let stem = in_p.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
+                    let ext = in_p.extension().and_then(|s| s.to_str()).unwrap_or("pdf");
+                    let _ = std::fs::create_dir_all(out_p);
+                    Some(out_p.join(format!("{}_optimized.{}", stem, ext)).to_string_lossy().to_string())
+                } else {
+                    Some(out_base.clone())
+                }
+            } else {
+                None
+            };
+
             if let Err(e) = minuopdf_lib::cli::run_batch_cli(
                 in_file,
-                output_path.as_deref(),
+                target_out.as_deref(),
                 preset.as_deref(),
                 profile.as_deref(),
                 strategy.as_deref(),
             ) {
-                eprintln!("Error: {}", e);
-                std::process::exit(1);
+                eprintln!("Error processing '{}': {}", in_file, e);
+                has_err = true;
             }
-        } else {
-            eprintln!("Error: Missing input PDF file. Use --help for usage.");
+        }
+
+        if has_err {
             std::process::exit(1);
         }
     } else {

@@ -79,7 +79,7 @@ pub fn get_preset_config(preset_name: &str) -> OptimizeConfig {
         "standard" | "ebook" => {
             // 標準 (電子書籍・閲覧向け) - デフォルト通り
         }
-        "low_quality" | "screen" => {
+        "low_quality" | "screen" | "light" | "max_compression" => {
             // 軽量化 (Web表示・メール送信用)
             config.color_conv = "original".to_string();
             config.color_img.target_dpi = 72;

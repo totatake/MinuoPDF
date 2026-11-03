@@ -22,11 +22,22 @@ fn prompt_selection(title: &str, options: &[&str]) -> usize {
         let _ = io::stdout().flush();
 
         let mut input = String::new();
-        if io::stdin().read_line(&mut input).is_ok() {
-            if let Ok(num) = input.trim().parse::<usize>() {
-                if num >= 1 && num <= options.len() {
-                    return num - 1;
+        match io::stdin().read_line(&mut input) {
+            Ok(0) => {
+                // EOF reached (e.g. non-interactive stdin / piped input)
+                println!("\nEOF encountered on stdin. Using default option [1].");
+                return 0;
+            }
+            Ok(_) => {
+                if let Ok(num) = input.trim().parse::<usize>() {
+                    if num >= 1 && num <= options.len() {
+                        return num - 1;
+                    }
                 }
+            }
+            Err(_) => {
+                println!("\nFailed to read stdin. Using default option [1].");
+                return 0;
             }
         }
         println!("Invalid selection. Please try again. / 選択が無効です。もう一度入力してください。");
@@ -40,15 +51,24 @@ fn prompt_int(title: &str, min: u8, max: u8, default: u8) -> u8 {
         let _ = io::stdout().flush();
 
         let mut input = String::new();
-        if io::stdin().read_line(&mut input).is_ok() {
-            let trimmed = input.trim();
-            if trimmed.is_empty() {
+        match io::stdin().read_line(&mut input) {
+            Ok(0) => {
+                // EOF reached
                 return default;
             }
-            if let Ok(num) = trimmed.parse::<u8>() {
-                if num >= min && num <= max {
-                    return num;
+            Ok(_) => {
+                let trimmed = input.trim();
+                if trimmed.is_empty() {
+                    return default;
                 }
+                if let Ok(num) = trimmed.parse::<u8>() {
+                    if num >= min && num <= max {
+                        return num;
+                    }
+                }
+            }
+            Err(_) => {
+                return default;
             }
         }
         println!("Invalid input. Please enter a number between {} and {}. / 無効な入力です。{}から{}の数字を入力してください。", min, max, min, max);
@@ -274,7 +294,8 @@ pub fn run_batch_cli(
     };
 
     let use_rasterize = if let Some(strat) = strategy_opt {
-        strat.to_lowercase() == "rasterize"
+        let s = strat.to_lowercase();
+        s == "rasterize" || s == "rasterize-page"
     } else {
         config.force_rasterize
     };
