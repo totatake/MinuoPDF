@@ -123,4 +123,4 @@ Rayon を用いて画像デコード・リサイズ・エンコードをマル�
 インストーラ不要で単体動作し、設定ファイルやプロファイルはすべて実行ファイルと同一ディレクトリ内で完結すること。
 
 #### `REQ_NFR_003`: Windows コンソール隠蔽制御
-GUI 起動時、Win32 API を用いて背面の黒いプロンプト画面を動的に非表示化すること。
+GUI 起動時、Win32 API（`GetConsoleProcessList`、`ShowWindow(SW_HIDE)`、`FreeConsole`）を用いて、エクスプローラ等からの起動時に自動生成されたコンソール画面（従来の `conhost.exe` および Windows 11 以降の Windows Terminal / ConPTY）を動的に非表示化・切り離すこと。なお、既存の対話シェル（`cmd.exe` や PowerShell など他プロセスが接続中のコンソール）から起動された場合は `ShowWindow` による親ウィンドウの非表示化は行わず、`FreeConsole` による切り離しのみを行う。

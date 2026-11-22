@@ -8,6 +8,8 @@ mod win32 {
     #[link(name = "kernel32")]
     extern "system" {
         pub fn GetConsoleWindow() -> HWND;
+        pub fn GetConsoleProcessList(lpdwProcessList: *mut u32, dwProcessCount: u32) -> u32;
+        pub fn FreeConsole() -> i32;
     }
 
     #[link(name = "user32")]
@@ -19,10 +21,15 @@ mod win32 {
 #[cfg(target_os = "windows")]
 fn hide_console() {
     unsafe {
-        let hwnd = win32::GetConsoleWindow();
-        if !hwnd.is_null() {
-            win32::ShowWindow(hwnd, 0); // SW_HIDE = 0
+        let mut pids = [0u32; 2];
+        let process_count = win32::GetConsoleProcessList(pids.as_mut_ptr(), 2);
+        if process_count == 1 {
+            let hwnd = win32::GetConsoleWindow();
+            if !hwnd.is_null() {
+                win32::ShowWindow(hwnd, 0); // SW_HIDE = 0
+            }
         }
+        let _ = win32::FreeConsole();
     }
 }
 

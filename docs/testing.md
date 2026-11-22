@@ -49,7 +49,7 @@ make test-all
 | :--- | :--- | :--- | :--- |
 | `TEST_QUAL_001` | 容量削減率 & 圧縮性能適格性検証 | `REQ_OPT_001`..`006` | 実サンプル PDF に対する目標圧縮率と閲覧整合性確認 |
 | `TEST_QUAL_002` | 非 GPL ライセンス適合性検証 | `REQ_NFR_001` | 全依存クレート（`lopdf`, `image`, `fax` 等）の GPL フリー（MIT/BSD/Apache-2.0）適合確認 |
-| `TEST_QUAL_003` | スタンドアロン・ポータビリティ検証 | `REQ_NFR_002`, `REQ_NFR_003` | インストーラ不要起動、同階層 `pdfium.dll` / `profiles/` 読込、Windows プロンプト `SW_HIDE` 非表示化確認 |
+| `TEST_QUAL_003` | スタンドアロン・ポータビリティ検証 | `REQ_NFR_002`, `REQ_NFR_003` | インストーラ不要起動、同階層 `pdfium.dll` / `profiles/` 読込、Windows プロンプト非表示化・切り離し確認（`conhost.exe` / Windows Terminal） |
 
 ### 2.4 E2E GUI 自動テスト仕様 (`tests/e2e/gui.spec.ts`)
 
