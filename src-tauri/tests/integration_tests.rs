@@ -4,10 +4,16 @@ use minuopdf_lib::rasterizer::rasterize_pdf;
 use minuopdf_lib::profile::get_preset_config;
 
 fn ensure_test_input_pdf(path: &Path) {
-    if path.exists() {
-        return;
-    }
-    
+    static TEST_INPUT_INIT: std::sync::Once = std::sync::Once::new();
+    TEST_INPUT_INIT.call_once(|| {
+        if path.exists() && std::fs::metadata(path).map(|m| m.len() > 0).unwrap_or(false) {
+            return;
+        }
+        build_and_write_test_input_pdf(path);
+    });
+}
+
+fn build_and_write_test_input_pdf(path: &Path) {
     use lopdf::{Document, Object, Dictionary, Stream};
 
     let mut doc = Document::with_version("1.5");
@@ -86,7 +92,9 @@ fn ensure_test_input_pdf(path: &Path) {
     doc.objects.insert(catalog_id, Object::Dictionary(catalog_dict));
 
     doc.trailer.set("Root", Object::Reference(catalog_id));
-    let _ = doc.save(path);
+    let tmp_path = path.with_extension("pdf.tmp");
+    doc.save(&tmp_path).expect("failed to save temporary test_input.pdf");
+    std::fs::rename(&tmp_path, path).expect("failed to rename temporary test_input.pdf");
 }
 
 // ヘルパー関数: テスト用の入力PDFのパスを取得する

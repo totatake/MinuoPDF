@@ -46,7 +46,7 @@ test:
 	python scripts/ensure_pdfium.py
 	python scripts/ensure_fixtures.py
 	mkdir -p test-results
-	cd src-tauri && cargo test 2>&1 | tee ../test-results/cargo-test.log
+	cd src-tauri && cargo test > ../test-results/cargo-test.log 2>&1; status=$$?; cat ../test-results/cargo-test.log; exit $$status
 	python scripts/sync_test_results.py
 
 ## test-gui: Run Playwright E2E GUI tests
