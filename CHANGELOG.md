@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-22
+
+### Fixed
+- **Windows GUI Console Detachment**: Updated `hide_console()` in `src-tauri/src/main.rs` to check `GetConsoleProcessList` before calling `ShowWindow(SW_HIDE)` and to call `FreeConsole()`, closing automatically spawned Windows Terminal (ConPTY) console windows in addition to legacy `conhost.exe` without hiding pre-existing interactive shells.
+
 ## [0.3.0] - 2026-11-22
 
 ### Changed
