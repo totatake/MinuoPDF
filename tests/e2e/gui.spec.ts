@@ -16,12 +16,13 @@ test.describe('MinuoPDF E2E GUI Automated Testing', () => {
     await expect(dropZone.first()).toBeVisible();
   });
 
-  test('REQ_GUI_002: Dynamic Language Toggle (English <-> Japanese)', async ({ page }) => {
+  test('REQ_GUI_002: Dynamic Language Toggle (Auto / English / Japanese)', async ({ page }) => {
     // Locate language select box
     const langSelect = page.locator('select.lang-select-box');
     await expect(langSelect).toBeVisible();
+    await expect(langSelect).toHaveValue('auto');
 
-    // Check Easy Mode tab text in English (default)
+    // Check Easy Mode tab text in Auto (resolved to English in default test locale)
     const easyTab = page.locator('button.tab-btn').first();
     await expect(easyTab).toContainText('Easy Mode');
 
@@ -29,9 +30,21 @@ test.describe('MinuoPDF E2E GUI Automated Testing', () => {
     await langSelect.selectOption('ja');
     await expect(easyTab).toContainText('簡単モード');
 
-    // Switch back to English ("en")
+    // Switch to English ("en")
     await langSelect.selectOption('en');
     await expect(easyTab).toContainText('Easy Mode');
+
+    // Switch back to Auto ("auto")
+    await langSelect.selectOption('auto');
+    await expect(easyTab).toContainText('Easy Mode');
+
+    // Verify Auto resolves to Japanese under ja-JP locale
+    const jaContext = await page.context().browser()!.newContext({ locale: 'ja-JP' });
+    const jaPage = await jaContext.newPage();
+    await jaPage.goto('/');
+    await expect(jaPage.locator('select.lang-select-box')).toHaveValue('auto');
+    await expect(jaPage.locator('button.tab-btn').first()).toContainText('簡単モード');
+    await jaContext.close();
   });
 
   test('REQ_PROF_001 & REQ_GUI_003: Tab switching (Easy Mode <-> Detail Mode)', async ({ page }) => {

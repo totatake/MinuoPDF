@@ -30,8 +30,8 @@
 
 ### `DES_GUI_002`: 国際化 (i18n) モジュール設計 (`ARCH_FE_001`)
 
-- `src/lib/utils/i18n.ts` にて日本語 (`ja`) および英語 (`en`) の対訳キー辞書とプリセット説明文を保持する。
-- Svelte 5 の Reactive State (`$state`) を用いて、言語ボタンクリック時に全 UI テキストおよびツールチップをシームレスに再描画する。
+- `src/lib/utils/i18n.ts` にて `LangMode`（`"auto" | "ja" | "en"`）、ロケール自動判定関数 `resolveAutoLang()`、および日本語 (`ja`) / 英語 (`en`) の対訳キー辞書とプリセット説明文を保持する。
+- `+page.svelte` にて `langMode` の初期値を `"auto"` とし、Svelte 5 の `$derived` で実効言語 `currentLang`（`ja` / `en`）を導出・`document.documentElement.lang` を同期する。言語セレクト変更時に全 UI テキストおよびツールチップをシームレスに再描画する。
 
 ### `DES_GUI_003`: `AuditModal.svelte` — PDF 容量内訳ビジュアライザ (`ARCH_FE_001`, `ARCH_BE_AUDIT`)
 

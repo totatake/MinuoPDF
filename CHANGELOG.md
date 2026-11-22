@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Split `.github/workflows/build.yml` into `ci.yml` and `release.yml`.
 
 ### Added
+- Added automatic OS/locale-based GUI language detection (`auto` default) alongside explicit `English (EN)` and `日本語 (JA)` selection.
 - Added `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.github/ISSUE_TEMPLATE/`, and `.github/PULL_REQUEST_TEMPLATE.md`.
 - Added Architecture Decision Records under `docs/adr/`.
 

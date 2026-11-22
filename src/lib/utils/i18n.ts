@@ -1,3 +1,18 @@
+export type LangMode = "auto" | "ja" | "en";
+export type ResolvedLang = "ja" | "en";
+
+export function resolveAutoLang(): ResolvedLang {
+  if (typeof navigator === "undefined") {
+    return "en";
+  }
+  const candidates =
+    Array.isArray(navigator.languages) && navigator.languages.length > 0
+      ? navigator.languages
+      : [navigator.language];
+  const first = (candidates.find(Boolean) ?? "").toLowerCase();
+  return first.startsWith("ja") ? "ja" : "en";
+}
+
 export const translations = {
   ja: {
     targetFiles: "対象ファイル",

@@ -10,7 +10,7 @@
 | `v0.1.1` | 2026-10-11 | Linux リリースバイナリの実行権限付与修正とパッケージ改善 |
 | `v0.2.0` | 2026-10-17 | アーキテクチャ・性能・機能拡充（CTM DPI・Form XObject・SMask・Smart Fallback・Rayon 並列・PDF Audit）、450 DPI オプション追加 |
 | `v0.2.1` | 2026-11-03 | CTM オペレータパース堅牢化、CIDFont マッピング安全性向上、Audit 正規化、CLI プリセットエイリアス・stdin EOF ガード |
-| `v0.3.0` | 2026-11-22 | OSS リポジトリ構造標準化（`LICENSE` / `THIRD_PARTY_NOTICES.md` / `AGENTS.md` / `.github/`）、`docs/` の GitHub Markdown 移行・ADR 整備 |
+| `v0.3.0` | 2026-11-22 | OSS リポジトリ構造標準化（`LICENSE` / `THIRD_PARTY_NOTICES.md` / `AGENTS.md` / `.github/`）、`docs/` の GitHub Markdown 移行・ADR 整備、GUI 言語自動判定（`auto` デフォルト） |
 
 ## 2. 今後の展望 (Future Horizons)
 

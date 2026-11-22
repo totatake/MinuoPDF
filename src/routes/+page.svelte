@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
 
   import type { OptimizeConfig, PdfAuditComparison, LogItem } from "$lib/types";
-  import { translations } from "$lib/utils/i18n";
+  import { translations, resolveAutoLang, type LangMode } from "$lib/utils/i18n";
 
   import FileDropBar from "$lib/components/FileDropBar.svelte";
   import EasyModeTab from "$lib/components/EasyModeTab.svelte";
@@ -21,8 +21,15 @@
   let isDragging = $state<boolean>(false);
 
   // Language state
-  let currentLang = $state<"ja" | "en">("en");
+  let langMode = $state<LangMode>("auto");
+  const currentLang = $derived<"ja" | "en">(langMode === "auto" ? resolveAutoLang() : langMode);
   const t = $derived(translations[currentLang]);
+
+  $effect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = currentLang;
+    }
+  });
 
   // Presets and profile state
   let selectedPreset = $state<string>("standard");
@@ -387,7 +394,8 @@
         <button class="tab-btn" class:active={activeTab === 'detail'} onclick={() => activeTab = 'detail'}>{t.detailMode}</button>
         <button class="tab-btn" class:active={activeTab === 'profile'} onclick={() => activeTab = 'profile'}>{t.profileMode}</button>
       </nav>
-      <select class="lang-select-box" bind:value={currentLang}>
+      <select class="lang-select-box" bind:value={langMode}>
+        <option value="auto">{currentLang === 'ja' ? '自動 (JA)' : 'Auto (EN)'}</option>
         <option value="en">English (EN)</option>
         <option value="ja">日本語 (JA)</option>
       </select>
