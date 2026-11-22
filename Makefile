@@ -1,5 +1,5 @@
 # MinuoPDF Root Makefile
-.PHONY: all build dev docs clean distclean test test-gui test-all help
+.PHONY: all build dev clean distclean test test-gui test-all help
 
 # Default target
 all: help
@@ -17,7 +17,8 @@ build:
 	@cp -f src-tauri/resources/libpdfium.so dist/MinuoPDF/ 2>/dev/null || true
 	@cp -f README.ja.md dist/MinuoPDF/ 2>/dev/null || true
 	@cp -f README.md dist/MinuoPDF/ 2>/dev/null || true
-	@cp -f LICENSE.md dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f LICENSE dist/MinuoPDF/ 2>/dev/null || true
+	@cp -f THIRD_PARTY_NOTICES.md dist/MinuoPDF/ 2>/dev/null || true
 	@mkdir -p dist/MinuoPDF/profiles
 	@cp -rf profiles/* dist/MinuoPDF/profiles/ 2>/dev/null || true
 	@echo "Build and packaging complete. Distribution ready in dist/MinuoPDF"
@@ -28,18 +29,9 @@ dev:
 	@if [ ! -d "node_modules" ] || ! npx tauri --version >/dev/null 2>&1; then echo "node_modules missing or platform mismatch. Running npm install..."; npm install; fi
 	npx tauri dev
 
-## docs: Build Sphinx HTML documentation (ja and en)
-docs:
-	@echo "Building Sphinx documentation (ja & en)..."
-	@if [ -d ".venv" ]; then \
-		SPHINXBUILD="$$(pwd)/.venv/bin/sphinx-build" PATH="$$(pwd)/.venv/bin:$$PATH" $(MAKE) -C docs html-all; \
-	else \
-		$(MAKE) -C docs html-all; \
-	fi
-
-## clean: Clean build artifacts, dist, target, and docs
+## clean: Clean build artifacts, dist, target, and test reports
 clean:
-	rm -rf dist build .svelte-kit src-tauri/target docs/_build vite.config.*.timestamp-* pdf_optimizer_debug.log test_input*.pdf test-results playwright-report
+	rm -rf dist build .svelte-kit src-tauri/target vite.config.*.timestamp-* pdf_optimizer_debug.log test_input*.pdf test-results playwright-report
 	@echo "Cleanup complete."
 
 ## distclean: Clean build artifacts, node_modules, package-lock.json, PDFium binaries, test fixtures, and venv
@@ -74,7 +66,6 @@ help:
 	@echo "MinuoPDF Development Commands:"
 	@echo "  make build     - Build Tauri release binary and package into dist/"
 	@echo "  make dev       - Start Tauri dev environment"
-	@echo "  make docs      - Build Sphinx HTML documentation"
 	@echo "  make clean     - Clean build caches and outputs"
 	@echo "  make distclean - Clean build caches, node_modules, and package-lock.json"
 	@echo "  make test      - Run Rust unit and integration tests"

@@ -1,0 +1,178 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  ACTIONS_ALLOW_NODE20: true
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Verify Release Candidate Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run Svelte & TypeScript check
+        run: npm run check
+
+      - name: Prepare PDFium & Test Fixtures
+        run: |
+          python scripts/ensure_pdfium.py
+          python scripts/ensure_fixtures.py
+
+      - name: Run Rust Unit & Integration Tests
+        run: cd src-tauri && cargo test
+
+  build-app:
+    name: Build Release Package (${{ matrix.os }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build release distribution
+        run: make build
+
+      - name: Prepare Windows Distribution Package
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p release-dist/MinuoPDF-windows-x64
+          cp -rf dist/MinuoPDF/* release-dist/MinuoPDF-windows-x64/
+
+      - name: Prepare Linux Distribution Package
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p release-dist/MinuoPDF-linux-x64
+          cp -rf dist/MinuoPDF/* release-dist/MinuoPDF-linux-x64/
+
+      - name: Upload Windows Distribution Artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: minuopdf-windows-x64-dist
+          path: release-dist/
+
+      - name: Upload Linux Distribution Artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: minuopdf-linux-x64-dist
+          path: release-dist/
+
+  release:
+    name: Create GitHub Release
+    needs: build-app
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows Distribution Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: minuopdf-windows-x64-dist
+          path: dist/
+
+      - name: Download Linux Distribution Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: minuopdf-linux-x64-dist
+          path: dist/
+
+      - name: Archive Release Packages
+        run: |
+          cd dist
+          chmod +x MinuoPDF-linux-x64/minuopdf
+          zip -r ../MinuoPDF-windows-x64.zip MinuoPDF-windows-x64/
+          tar -czvf ../MinuoPDF-linux-x64.tar.gz MinuoPDF-linux-x64/
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            MinuoPDF-windows-x64.zip
+            MinuoPDF-linux-x64.tar.gz
+          generate_release_notes: true

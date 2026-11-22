@@ -4,7 +4,6 @@ rem MinuoPDF Root make.bat for Windows
 if "%1"=="" goto help
 if "%1"=="build" goto build
 if "%1"=="dev" goto dev
-if "%1"=="docs" goto docs
 if "%1"=="clean" goto clean
 if "%1"=="distclean" goto distclean
 if "%1"=="test" goto test
@@ -54,9 +53,14 @@ if exist "%~dp0README.md" (
     echo  [OK] Copied README.md
 )
 
-if exist "%~dp0LICENSE.md" (
-    copy /y "%~dp0LICENSE.md" "%~dp0dist\" >nul
-    echo  [OK] Copied LICENSE.md
+if exist "%~dp0LICENSE" (
+    copy /y "%~dp0LICENSE" "%~dp0dist\" >nul
+    echo  [OK] Copied LICENSE
+)
+
+if exist "%~dp0THIRD_PARTY_NOTICES.md" (
+    copy /y "%~dp0THIRD_PARTY_NOTICES.md" "%~dp0dist\" >nul
+    echo  [OK] Copied THIRD_PARTY_NOTICES.md
 )
 
 if exist "%~dp0profiles" (
@@ -83,31 +87,12 @@ if not exist "%~dp0node_modules" (
 call npx tauri dev
 goto end
 
-:docs
-echo [MinuoPDF] Syncing test results for documentation...
-if exist "%~dp0test-results\results.json" (
-    python "%~dp0scripts\sync_test_results.py"
-)
-echo [MinuoPDF] Building Sphinx documentation (ja and en)...
-cd docs
-call make.bat html-all
-if errorlevel 1 (
-    cd ..
-    echo [ERROR] Documentation build failed due to warnings or errors.
-    exit /b 1
-)
-cd ..
-goto end
-
-
-
 :clean
 echo [MinuoPDF] Cleaning temporary files and build artifacts...
 if exist "%~dp0dist" rmdir /s /q "%~dp0dist"
 if exist "%~dp0build" rmdir /s /q "%~dp0build"
 if exist "%~dp0.svelte-kit" rmdir /s /q "%~dp0.svelte-kit"
 if exist "%~dp0src-tauri\target" rmdir /s /q "%~dp0src-tauri\target"
-if exist "%~dp0docs\_build" rmdir /s /q "%~dp0docs\_build"
 if exist "%~dp0vite.config.js.timestamp-*" del /q "%~dp0vite.config.js.timestamp-*"
 if exist "%~dp0vite.config.ts.timestamp-*" del /q "%~dp0vite.config.ts.timestamp-*"
 if exist "%~dp0pdf_optimizer_debug.log" del /q "%~dp0pdf_optimizer_debug.log"
@@ -191,8 +176,7 @@ goto end
 echo MinuoPDF Development Commands (make.bat):
 echo   make build     - Build Tauri release binary and package into dist/
 echo   make dev       - Start Tauri dev environment
-echo   make docs      - Build Sphinx HTML documentation
-echo   make clean     - Clean build caches, target, dist, and docs/_build
+echo   make clean     - Clean build caches, target, and dist
 echo   make distclean - Clean build caches, node_modules, and package-lock.json
 echo   make test      - Run Rust unit and integration tests
 echo   make test-gui  - Run Playwright E2E GUI automated tests

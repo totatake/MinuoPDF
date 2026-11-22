@@ -131,7 +131,7 @@ def sync_test_results():
     playwright_json_path = os.path.join(results_dir, "results.json")
     cargo_log_path = os.path.join(results_dir, "cargo-test.log")
     summary_json_path = os.path.join(results_dir, "summary.json")
-    output_rst_path = os.path.join(root_dir, "docs", "test_results.rst")
+    output_md_path = os.path.join(root_dir, "docs", "reports", "test-results.md")
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -239,147 +239,82 @@ def sync_test_results():
     qual_total = len(QUALIFICATION_TESTS)
     qual_overall = "PASSED"
 
-    # Generate rst content for Sphinx-needs
-    rst_lines = []
-    rst_lines.append("========================================")
-    rst_lines.append("テスト実行結果 (Test Execution Results)")
-    rst_lines.append("========================================")
-    rst_lines.append("")
-    rst_lines.append("本ページは、MinuoPDF アプリケーションのすべてのテスト（単体テスト、結合テスト、適格性テスト、GUI E2Eテスト）の最新実行結果ログです。")
-    rst_lines.append("")
-    rst_lines.append("総合テスト実行サマリー")
-    rst_lines.append("======================")
-    rst_lines.append("")
-
-    # Summary: Unit
     unit_run_time = summary_data.get("unit_last_run", now_str)
-    rst_lines.append(".. test_result:: 単体テスト (Unit Test) 実行サマリー")
-    rst_lines.append("   :id: TR_UNIT_SUMMARY")
-    rst_lines.append("   :links: TEST_UNIT_001, TEST_UNIT_002, TEST_UNIT_003, TEST_UNIT_004")
-    rst_lines.append(f"   :result: {unit_overall}")
-    rst_lines.append(f"   :last_run: {unit_run_time}")
-    rst_lines.append("")
-    rst_lines.append(f"   - **最終実行日時**: {unit_run_time}")
-    rst_lines.append(f"   - **総合判定**: ``{unit_overall}`` ({unit_passed} PASSED / {unit_total - unit_passed} FAILED / 計 {unit_total} テストケース)")
-    rst_lines.append("   - **対象仕様**: :need:`TEST_UNIT_001`, :need:`TEST_UNIT_002`, :need:`TEST_UNIT_003`, :need:`TEST_UNIT_004`")
-    rst_lines.append("")
-
-    # Summary: Integration
     int_run_time = summary_data.get("int_last_run", now_str)
-    rst_lines.append(".. test_result:: 結合テスト (Integration Test) 実行サマリー")
-    rst_lines.append("   :id: TR_INT_SUMMARY")
-    rst_lines.append("   :links: TEST_INT_001, TEST_INT_002, TEST_INT_003, TEST_INT_004")
-    rst_lines.append(f"   :result: {int_overall}")
-    rst_lines.append(f"   :last_run: {int_run_time}")
-    rst_lines.append("")
-    rst_lines.append(f"   - **最終実行日時**: {int_run_time}")
-    rst_lines.append(f"   - **総合判定**: ``{int_overall}`` ({int_passed} PASSED / {int_total - int_passed} FAILED / 計 {int_total} テストケース)")
-    rst_lines.append("   - **対象仕様**: :need:`TEST_INT_001`, :need:`TEST_INT_002`, :need:`TEST_INT_003`, :need:`TEST_INT_004`")
-    rst_lines.append("")
-
-    # Summary: Qualification
     qual_run_time = summary_data.get("qual_last_run", now_str)
-    rst_lines.append(".. test_result:: 適格性テスト (Qualification Test) 実行サマリー")
-    rst_lines.append("   :id: TR_QUAL_SUMMARY")
-    rst_lines.append("   :links: TEST_QUAL_001, TEST_QUAL_002, TEST_QUAL_003")
-    rst_lines.append(f"   :result: {qual_overall}")
-    rst_lines.append(f"   :last_run: {qual_run_time}")
-    rst_lines.append("")
-    rst_lines.append(f"   - **最終実行日時**: {qual_run_time}")
-    rst_lines.append(f"   - **総合判定**: ``{qual_overall}`` ({qual_passed} PASSED / 0 FAILED / 計 {qual_total} テストケース)")
-    rst_lines.append("   - **対象仕様**: :need:`TEST_QUAL_001`, :need:`TEST_QUAL_002`, :need:`TEST_QUAL_003`")
-    rst_lines.append("")
-
-    # Summary: GUI E2E
     gui_run_time = summary_data.get("gui_last_run", now_str)
-    rst_lines.append(".. test_result:: E2E GUI 自動テスト実行サマリー")
-    rst_lines.append("   :id: TR_GUI_E2E")
-    rst_lines.append("   :links: TEST_GUI_001, TEST_GUI_002, TEST_GUI_003, TEST_GUI_004, TEST_GUI_005")
-    rst_lines.append(f"   :result: {gui_overall}")
-    rst_lines.append(f"   :last_run: {gui_run_time}")
-    rst_lines.append("")
-    rst_lines.append(f"   - **最終実行日時**: {gui_run_time}")
-    rst_lines.append(f"   - **総合判定**: ``{gui_overall}`` ({gui_passed} PASSED / {gui_total - gui_passed} FAILED / 計 {gui_total} テストケース)")
-    rst_lines.append("   - **対象仕様**: :need:`TEST_GUI_001`, :need:`TEST_GUI_002`, :need:`TEST_GUI_003`, :need:`TEST_GUI_004`, :need:`TEST_GUI_005`")
-    rst_lines.append("")
 
-    # Section 1: Unit Tests
+    # Generate GitHub Markdown report under docs/reports/test-results.md
+    md_lines = [
+        "# テスト実行結果 (Test Execution Results)",
+        "",
+        "本ページは、MinuoPDF アプリケーションのすべてのテスト（単体テスト、結合テスト、適格性テスト、GUI E2E テスト）の最新実行結果レポートです（`scripts/sync_test_results.py` により自動生成されます）。仕様詳細は [../testing.md](../testing.md) を参照してください。",
+        "",
+        "## 総合テスト実行サマリー",
+        "",
+        "| 結果 ID | テストスイート | 総合判定 | 内訳 (PASSED / FAILED / 計) | 対象仕様 ID | 最終実行日時 |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- |",
+        f"| `TR_UNIT_SUMMARY` | 単体テスト (Unit Test) | `{unit_overall}` | {unit_passed} PASSED / {unit_total - unit_passed} FAILED / 計 {unit_total} | `TEST_UNIT_001`, `TEST_UNIT_002`, `TEST_UNIT_003`, `TEST_UNIT_004` | `{unit_run_time}` |",
+        f"| `TR_INT_SUMMARY` | 結合テスト (Integration Test) | `{int_overall}` | {int_passed} PASSED / {int_total - int_passed} FAILED / 計 {int_total} | `TEST_INT_001`, `TEST_INT_002`, `TEST_INT_003`, `TEST_INT_004` | `{int_run_time}` |",
+        f"| `TR_QUAL_SUMMARY` | 適格性テスト (Qualification Test) | `{qual_overall}` | {qual_passed} PASSED / 0 FAILED / 計 {qual_total} | `TEST_QUAL_001`, `TEST_QUAL_002`, `TEST_QUAL_003` | `{qual_run_time}` |",
+        f"| `TR_GUI_E2E` | E2E GUI 自動テスト | `{gui_overall}` | {gui_passed} PASSED / {gui_total - gui_passed} FAILED / 計 {gui_total} | `TEST_GUI_001`, `TEST_GUI_002`, `TEST_GUI_003`, `TEST_GUI_004`, `TEST_GUI_005` | `{gui_run_time}` |",
+        "",
+    ]
+
     if unit_tests:
-        rst_lines.append("単体テスト実行結果一覧 (Unit Tests)")
-        rst_lines.append("=========================================")
-        rst_lines.append("")
+        md_lines.extend([
+            "## 単体テスト実行結果一覧 (Unit Tests)",
+            "",
+            "| 結果 ID | テストケース | 対象仕様 | ステータス | 最終実行日時 |",
+            "| :--- | :--- | :--- | :--- | :--- |",
+        ])
         for idx, tc in enumerate(unit_tests, 1):
             tr_id = f"TR_UNIT_{idx:03d}"
             spec_id = tc.get("spec_id", "TEST_UNIT_001")
-            rst_lines.append(f".. test_result:: {tc['name']}")
-            rst_lines.append(f"   :id: {tr_id}")
-            rst_lines.append(f"   :links: {spec_id}")
-            rst_lines.append(f"   :result: {tc['status']}")
-            rst_lines.append(f"   :last_run: {unit_run_time}")
-            rst_lines.append("")
-            rst_lines.append(f"   - **ステータス**: ``{tc['status']}``")
-            rst_lines.append(f"   - **対象仕様**: :need:`{spec_id}`")
-            rst_lines.append("")
+            md_lines.append(f"| `{tr_id}` | `{tc['name']}` | `{spec_id}` | `{tc['status']}` | `{unit_run_time}` |")
+        md_lines.append("")
 
-    # Section 2: Integration Tests
     if int_tests:
-        rst_lines.append("結合テスト実行結果一覧 (Integration Tests)")
-        rst_lines.append("===========================================")
-        rst_lines.append("")
+        md_lines.extend([
+            "## 結合テスト実行結果一覧 (Integration Tests)",
+            "",
+            "| 結果 ID | テストケース | 対象仕様 | ステータス | 最終実行日時 |",
+            "| :--- | :--- | :--- | :--- | :--- |",
+        ])
         for idx, tc in enumerate(int_tests, 1):
             tr_id = f"TR_INT_{idx:03d}"
             spec_id = tc.get("spec_id", "TEST_INT_001")
-            rst_lines.append(f".. test_result:: {tc['name']}")
-            rst_lines.append(f"   :id: {tr_id}")
-            rst_lines.append(f"   :links: {spec_id}")
-            rst_lines.append(f"   :result: {tc['status']}")
-            rst_lines.append(f"   :last_run: {int_run_time}")
-            rst_lines.append("")
-            rst_lines.append(f"   - **ステータス**: ``{tc['status']}``")
-            rst_lines.append(f"   - **対象仕様**: :need:`{spec_id}`")
-            rst_lines.append("")
+            md_lines.append(f"| `{tr_id}` | `{tc['name']}` | `{spec_id}` | `{tc['status']}` | `{int_run_time}` |")
+        md_lines.append("")
 
-    # Section 3: Qualification Tests
-    rst_lines.append("適格性テスト実行結果一覧 (Qualification Tests)")
-    rst_lines.append("===============================================")
-    rst_lines.append("")
+    md_lines.extend([
+        "## 適格性テスト実行結果一覧 (Qualification Tests)",
+        "",
+        "| 結果 ID | テスト項目 | 検証概要 | 対象仕様 | ステータス | 最終実行日時 |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- |",
+    ])
     for qt in QUALIFICATION_TESTS:
-        rst_lines.append(f".. test_result:: {qt['name']}")
-        rst_lines.append(f"   :id: {qt['id']}")
-        rst_lines.append(f"   :links: {qt['spec_id']}")
-        rst_lines.append(f"   :result: {qt['status']}")
-        rst_lines.append(f"   :last_run: {qual_run_time}")
-        rst_lines.append("")
-        rst_lines.append(f"   - **ステータス**: ``{qt['status']}``")
-        rst_lines.append(f"   - **検証概要**: {qt['desc']}")
-        rst_lines.append(f"   - **対象仕様**: :need:`{qt['spec_id']}`")
-        rst_lines.append("")
+        md_lines.append(f"| `{qt['id']}` | {qt['name']} | {qt['desc']} | `{qt['spec_id']}` | `{qt['status']}` | `{qual_run_time}` |")
+    md_lines.append("")
 
-    # Section 4: E2E GUI Tests
     if gui_tests:
-        rst_lines.append("E2E GUI テスト実行結果一覧 (GUI E2E Tests)")
-        rst_lines.append("===========================================")
-        rst_lines.append("")
+        md_lines.extend([
+            "## E2E GUI テスト実行結果一覧 (GUI E2E Tests)",
+            "",
+            "| 結果 ID | テストケース | 所要時間 | 関連要件 / 仕様 | ステータス | 最終実行日時 |",
+            "| :--- | :--- | :--- | :--- | :--- | :--- |",
+        ])
         for idx, tc in enumerate(gui_tests, 1):
             tr_id = f"TR_CASE_{idx:03d}"
-            links_str = ", ".join(tc["req_ids"]) if tc["req_ids"] else "TEST_GUI_001"
-            rst_lines.append(f".. test_result:: {tc['title']}")
-            rst_lines.append(f"   :id: {tr_id}")
-            rst_lines.append(f"   :links: {links_str}")
-            rst_lines.append(f"   :result: {tc['status']}")
-            rst_lines.append(f"   :last_run: {gui_run_time}")
-            rst_lines.append("")
-            rst_lines.append(f"   - **ステータス**: ``{tc['status']}`` (所要時間: {tc['duration']} ms)")
-            if tc["req_ids"]:
-                links_formatted = ", ".join([f":need:`{r}`" for r in tc["req_ids"]])
-                rst_lines.append(f"   - **関連要件**: {links_formatted}")
-            rst_lines.append("")
+            links_str = ", ".join(f"`{r}`" for r in tc["req_ids"]) if tc["req_ids"] else "`TEST_GUI_001`"
+            md_lines.append(f"| `{tr_id}` | {tc['title']} | {tc['duration']} ms | {links_str} | `{tc['status']}` | `{gui_run_time}` |")
+        md_lines.append("")
 
-    os.makedirs(os.path.dirname(output_rst_path), exist_ok=True)
-    with open(output_rst_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(rst_lines))
+    os.makedirs(os.path.dirname(output_md_path), exist_ok=True)
+    with open(output_md_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(md_lines))
 
-    print(f"Successfully generated {output_rst_path}: Unit={len(unit_tests)}, Int={len(int_tests)}, Qual={len(QUALIFICATION_TESTS)}, GUI={len(gui_tests)}.")
+    print(f"Successfully generated {output_md_path}: Unit={len(unit_tests)}, Int={len(int_tests)}, Qual={len(QUALIFICATION_TESTS)}, GUI={len(gui_tests)}.")
 
 if __name__ == "__main__":
     sync_test_results()

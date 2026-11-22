@@ -15,11 +15,9 @@ vite.config.ts.timestamp-*
 /src-tauri/resources/pdfium.dll
 /src-tauri/resources/libpdfium.so
 /src-tauri/resources/*.dylib
-/docs/_build
 /test-results
 *.log
 test_input*.pdf
 /tests/fixtures/*.pdf
 .venv/
 venv/
-
