@@ -12,6 +12,7 @@
 | `v0.2.1` | 2026-11-03 | CTM オペレータパース堅牢化、CIDFont マッピング安全性向上、Audit 正規化、CLI プリセットエイリアス・stdin EOF ガード |
 | `v0.3.0` | 2026-11-22 | OSS リポジトリ構造標準化（`LICENSE` / `THIRD_PARTY_NOTICES.md` / `AGENTS.md` / `.github/`）、`docs/` の GitHub Markdown 移行・ADR 整備、GUI 言語自動判定（`auto` デフォルト） |
 | `v0.3.1` | 2026-11-22 | Windows 11（Windows Terminal / ConPTY）での GUI 起動時コンソール切り離し（`GetConsoleProcessList` + `FreeConsole`）対応 |
+| `v0.3.2` | 2026-11-25 | GitHub Actions リリース物・Artifact ファイル名へのバージョン名埋め込み（`MinuoPDF-v<version>-<os>-x64`） |
 
 ## 2. 今後の展望 (Future Horizons)
 

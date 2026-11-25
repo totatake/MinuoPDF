@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-25
+
+### Changed
+- **CI / Release Artifact Versioning**: Updated GitHub Actions release and CI workflows (`.github/workflows/release.yml`, `.github/workflows/ci.yml`) to embed the application version tag into workflow artifact names, distribution directories, and release asset filenames (e.g., `MinuoPDF-v0.3.2-windows-x64.zip`, `MinuoPDF-v0.3.2-linux-x64.tar.gz`).
+
 ## [0.3.1] - 2026-11-22
 
 ### Fixed

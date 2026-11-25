@@ -10,7 +10,7 @@
 | [requirements.md](requirements.md) | ソフトウェア要件仕様書（機能要件 `REQ_*` / 非機能要件） |
 | [architecture.md](architecture.md) | システムアーキテクチャ設計書（構成図・`ARCH_*` コンポーネント・ライセンス/信頼境界） |
 | [testing.md](testing.md) | テスト仕様および要件トレーサビリティマトリクス（`TEST_*`・`REQ → ARCH → DES → TEST`） |
-| [roadmap.md](roadmap.md) | 達成済みマイルストーン（`v0.1.0`〜`v0.3.1`）と今後の展望 |
+| [roadmap.md](roadmap.md) | 達成済みマイルストーン（`v0.1.0`〜`v0.3.2`）と今後の展望 |
 
 ## サブディレクトリ
 
