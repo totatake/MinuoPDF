@@ -160,29 +160,42 @@ jobs:
       - name: Build release distribution
         run: make build
 
+      - name: Determine Application Version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VER="${GITHUB_REF_NAME}"
+          else
+            PKG_VER=$(node -p "require('./package.json').version")
+            VER="v${PKG_VER}"
+          fi
+          echo "version=${VER}" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=${VER}" >> $GITHUB_ENV
+
       - name: Prepare Windows Distribution Package
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          mkdir -p release-dist/MinuoPDF-windows-x64
-          cp -rf dist/MinuoPDF/* release-dist/MinuoPDF-windows-x64/
+          mkdir -p "release-dist/MinuoPDF-${APP_VERSION}-windows-x64"
+          cp -rf dist/MinuoPDF/* "release-dist/MinuoPDF-${APP_VERSION}-windows-x64/"
 
       - name: Prepare Linux Distribution Package
         if: runner.os == 'Linux'
         run: |
-          mkdir -p release-dist/MinuoPDF-linux-x64
-          cp -rf dist/MinuoPDF/* release-dist/MinuoPDF-linux-x64/
+          mkdir -p "release-dist/MinuoPDF-${APP_VERSION}-linux-x64"
+          cp -rf dist/MinuoPDF/* "release-dist/MinuoPDF-${APP_VERSION}-linux-x64/"
 
       - name: Upload Windows Distribution Artifact
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: minuopdf-windows-x64-dist
+          name: minuopdf-${{ steps.version.outputs.version }}-windows-x64-dist
           path: release-dist/
 
       - name: Upload Linux Distribution Artifact
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: minuopdf-linux-x64-dist
+          name: minuopdf-${{ steps.version.outputs.version }}-linux-x64-dist
           path: release-dist/
